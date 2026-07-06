@@ -1,3 +1,4 @@
+import os
 from os import read
 
 from PIL import Image
@@ -6,7 +7,7 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import GaussianBlur
 import numpy as np
 
-def im_labels_pair_getter(folder="images/",label_file="labels.csv"):
+def im_labels_pair_getter(folder="21ClassDataset/",label_file="labels_21ClassDataset.csv"):
     labels=open(folder+label_file)
     labels.__next__()
     pairs=[]
@@ -70,3 +71,4 @@ def getdataloaders():
     train_set = DataLoader(Imageset(train=True),batch_size=1)
     valid_set = DataLoader(Imageset(train=False),batch_size=1)
     return train_set,valid_set
+
