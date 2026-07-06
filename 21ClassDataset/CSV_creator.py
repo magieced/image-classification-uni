@@ -45,6 +45,6 @@ with open(csv_file_path, "w", newline="") as csv_file:
         for jpg in element: 
             if jpg == ".DS_Store":
                 continue
-            csv_file.write(jpg + "," + str(label_counter) + "\n")
+            csv_file.write(elem + "/" + jpg + "," + str(label_counter) + "\n")
         label_counter += 1  
 print("labels_21ClassDataset created")
