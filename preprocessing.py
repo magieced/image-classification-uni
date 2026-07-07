@@ -31,12 +31,8 @@ def single_im_preprocessing(image:Image.Image,imsize=128):
     image = torch.tensor(np.array(image.resize((imsize,imsize))))
     gaus = GaussianBlur(5,1)
     if len(image.size()) == 2:
-        plt.imshow(image)
-        plt.show()
         image = image[:,:,None]
         image = image.repeat(1,1,3)
-        plt.imshow(image)
-        plt.show()
     image = gaus.forward(image)
     return image
 
@@ -72,7 +68,6 @@ class Imageset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.data)
-c = Imageset(True)
 
 def getdataloaders(shuffle:bool=False):
     """creates and return one dataloader for training and one dataloader for validation
@@ -83,4 +78,3 @@ def getdataloaders(shuffle:bool=False):
     train_set = DataLoader(Imageset(train=True),batch_size=1,shuffle=shuffle)
     valid_set = DataLoader(Imageset(train=False),batch_size=1,shuffle=shuffle)
     return train_set,valid_set
-
