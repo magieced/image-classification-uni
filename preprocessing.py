@@ -3,6 +3,7 @@ from os import read
 
 from PIL import Image
 import torch
+from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
 from torchvision.transforms import GaussianBlur
 import numpy as np
@@ -29,6 +30,13 @@ def single_im_preprocessing(image:Image.Image,imsize=128):
             the preprocessed Image, dtype=torch.tensor"""
     image = torch.tensor(np.array(image.resize((imsize,imsize))))
     gaus = GaussianBlur(5,1)
+    if len(image.size()) == 2:
+        plt.imshow(image)
+        plt.show()
+        image = image[:,:,None]
+        image = image.repeat(1,1,3)
+        plt.imshow(image)
+        plt.show()
     image = gaus.forward(image)
     return image
 
@@ -66,9 +74,13 @@ class Imageset(torch.utils.data.Dataset):
         return len(self.data)
 c = Imageset(True)
 
-def getdataloaders():
-    """creates and return one dataloader for training and one dataloader for validation"""
-    train_set = DataLoader(Imageset(train=True),batch_size=1)
-    valid_set = DataLoader(Imageset(train=False),batch_size=1)
+def getdataloaders(shuffle:bool=False):
+    """creates and return one dataloader for training and one dataloader for validation
+    Args:
+        shuffle(bool): if true the dataloaders get shuffled, a.k.a. the order of the images with their labels gets randomized
+    Returns:
+        a training(first 80%) and a validation(last 20%) dataloader of the training images"""
+    train_set = DataLoader(Imageset(train=True),batch_size=1,shuffle=shuffle)
+    valid_set = DataLoader(Imageset(train=False),batch_size=1,shuffle=shuffle)
     return train_set,valid_set
 
