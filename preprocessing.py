@@ -31,10 +31,6 @@ def single_im_preprocessing(image:Image.Image,imsize=224): # changed size to 224
         imsize(int): the sidelength to which the inputted image should be scaled
     Returns:
             the preprocessed Image, dtype=torch.tensor"""
-
-    # Added to deal with greyscale images ~Erik
-    image = image.convert("RGB")
-
     # Swapped from the previous implementation to transform images into C H W format ~Erik
     transform = transforms.Compose([
         transforms.Resize((imsize,imsize)),
@@ -47,6 +43,7 @@ def single_im_preprocessing(image:Image.Image,imsize=224): # changed size to 224
     if len(image.size()) == 2:
         image = image[:,:,None]
         image = image.repeat(1,1,3)
+        image = image.convert("RGB")
     image = gaus.forward(image)
     return image
 
@@ -63,11 +60,11 @@ def list_im_preprocessing(images:list[Image.Image],imsize=128):
 
 class Imageset(torch.utils.data.Dataset):
 
-    def __init__(self,train:bool):
+    def __init__(self,train:bool,imsize:int):
         temppairs= im_labels_pair_getter()
         imspercent= len(temppairs)/100
         split= round(imspercent*80)
-        data = list_im_preprocessing([(x[0]) for x in temppairs])
+        data = list_im_preprocessing([(x[0]) for x in temppairs],imsize)
         # I'm sorry for this implementation
         # This is a temporary solution at best
         # Converts labels from str to int (python doesn't support multiclass lists) while also removing the negative class problem (crossEntropyLoss doesn't support negative classes)
@@ -90,12 +87,13 @@ class Imageset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.data)
 
-def get_data_loaders(shuffle:bool=False):
+def get_data_loaders(shuffled:bool=False, image_side_length:int=128):
     """creates and return one dataloader for training and one dataloader for validation
     Args:
-        shuffle(bool): if true the dataloaders get shuffled, a.k.a. the order of the images with their labels gets randomized
+        shuffled(bool): if true the dataloaders get shuffled, a.k.a. the order of the images with their labels gets randomized
+        image_side_length(int): all images in the dataloaders will be resized to squares of this sidelength
     Returns:
         a training(first 80%) and a validation(last 20%) dataloader of the training images"""
-    train_set = DataLoader(Imageset(train=True),batch_size=1,shuffle=shuffle)
-    valid_set = DataLoader(Imageset(train=False),batch_size=1,shuffle=shuffle)
+    train_set = DataLoader(Imageset(train=True,imsize=image_side_length), batch_size=1, shuffle=shuffled)
+    valid_set = DataLoader(Imageset(train=False,imsize=image_side_length), batch_size=1, shuffle=shuffled)
     return train_set,valid_set
