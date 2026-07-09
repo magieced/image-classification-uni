@@ -50,7 +50,7 @@ def list_im_preprocessing(images:list[Image.Image],imsize=128):
         imsize(int): the sidelength to which the inputted images should be scaled
     Returns:
             the preprocessed Images, dtype=list[torch.tensor]"""
-    for i in tqdm(range(len(images))):
+    for i in tqdm(range(len(images)),desc="preprocessing for the dataset"):
         images[i]=single_im_preprocessing(images[i],imsize)
     return images
 
@@ -61,8 +61,7 @@ class Imageset(torch.utils.data.Dataset):
         imspercent= len(temppairs)/100
         split= round(imspercent*80)
         data = list_im_preprocessing([(x[0]) for x in temppairs],imsize)
-        print(1)
-        labels = [int(x[1].replace('-','2')) for x in temppairs]
+        labels = [int(x[1].replace('-1','20')) for x in temppairs]
 
         data = shuffle(data,random_state=0)
         labels = shuffle(labels,random_state=0)
@@ -90,3 +89,4 @@ def get_dataloaders(shuffled:bool=False, image_side_length:int=128):
     train_set = DataLoader(Imageset(train=True,imsize=image_side_length), batch_size=1, shuffle=shuffled)
     valid_set = DataLoader(Imageset(train=False,imsize=image_side_length), batch_size=1, shuffle=shuffled)
     return train_set,valid_set
+x,y = get_dataloaders(image_side_length=224)
