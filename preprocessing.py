@@ -1,4 +1,4 @@
-import os
+import os # TODO: What is this import for? It seems to be unused ~Erik
 from os import read
 
 from PIL import Image
@@ -8,6 +8,8 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import GaussianBlur
 import numpy as np
 from sklearn.utils import shuffle
+
+from torchvision import transforms
 
 def im_labels_pair_getter(folder="21ClassDataset/",label_file="labels_21ClassDataset.csv"):
     labels=open(folder+label_file)
@@ -22,14 +24,25 @@ def im_labels_pair_getter(folder="21ClassDataset/",label_file="labels_21ClassDat
         pairs += [[im,parts[1]]]
     return pairs
 
-def single_im_preprocessing(image:Image.Image,imsize=128):
-    """takes a single PIL image and scales it to imsize*imsize pixels(default: 128x128) and  blurs it with a gaussian kernel
+def single_im_preprocessing(image:Image.Image,imsize=224): # changed size to 224 ~Erik
+    """takes a single PIL image and scales it to imsize*imsize pixels(default: 224x224) and  blurs it with a gaussian kernel
     Args:
         image(PIL.Image.Image): the PIL Image to be preprocessed
         imsize(int): the sidelength to which the inputted image should be scaled
     Returns:
             the preprocessed Image, dtype=torch.tensor"""
-    image = torch.tensor(np.array(image.resize((imsize,imsize))))
+
+    # Added to deal with greyscale images ~Erik
+    image = image.convert("RGB")
+
+    # Swapped from the previous implementation to transform images into C H W format ~Erik
+    transform = transforms.Compose([
+        transforms.Resize((imsize,imsize)),
+        transforms.ToTensor()
+    ])
+
+    image = transform(image)
+
     gaus = GaussianBlur(5,1)
     if len(image.size()) == 2:
         image = image[:,:,None]
@@ -55,7 +68,12 @@ class Imageset(torch.utils.data.Dataset):
         imspercent= len(temppairs)/100
         split= round(imspercent*80)
         data = list_im_preprocessing([(x[0]) for x in temppairs])
-        labels = [x[1] for x in temppairs]
+        # I'm sorry for this implementation
+        # This is a temporary solution at best
+        # Converts labels from str to int (python doesn't support multiclass lists) while also removing the negative class problem (crossEntropyLoss doesn't support negative classes)
+        # ~Erik
+        # TODO: Make the reclassing happen in a way that works with interface.py
+        labels = [(int(x[1]) + 1) for x in temppairs]
         data = shuffle(data,random_state=0)
         labels = shuffle(labels,random_state=0)
         if train:
