@@ -12,7 +12,7 @@ def train_model(use_gpu = False, epochs = 3):
         21 # Number of classes. Hardcoded as we don't need to change it ~Erik
     )
 
-    train_loader, validation_loader = preprocessing.get_data_loaders()
+    train_loader, validation_loader = preprocessing.get_dataloaders()
 
     for parameter in model.parameters():
         parameter.requries_grad = True
