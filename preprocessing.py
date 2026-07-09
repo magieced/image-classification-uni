@@ -72,7 +72,7 @@ class Imageset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.data)
 
-def getdataloaders(shuffle:bool=False):
+def get_data_loaders(shuffle:bool=False):
     """creates and return one dataloader for training and one dataloader for validation
     Args:
         shuffle(bool): if true the dataloaders get shuffled, a.k.a. the order of the images with their labels gets randomized
