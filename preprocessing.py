@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
 from torchvision.transforms import GaussianBlur
 import numpy as np
+from sklearn.utils import shuffle
 
 def im_labels_pair_getter(folder="21ClassDataset/",label_file="labels_21ClassDataset.csv"):
     labels=open(folder+label_file)
@@ -55,6 +56,8 @@ class Imageset(torch.utils.data.Dataset):
         split= round(imspercent*80)
         data = list_im_preprocessing([(x[0]) for x in temppairs])
         labels = [x[1] for x in temppairs]
+        data = shuffle(data,random_state=0)
+        labels = shuffle(labels,random_state=0)
         if train:
             self.data = data[:split]
             self.labels = labels[:split]
