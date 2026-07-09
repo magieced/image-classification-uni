@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import GaussianBlur
 import numpy as np
 from sklearn.utils import shuffle
+from tqdm import tqdm
 
 from torchvision import transforms
 
@@ -36,16 +37,11 @@ def single_im_preprocessing(image:Image.Image,imsize=224): # changed size to 224
         transforms.Resize((imsize,imsize)),
         transforms.ToTensor()
     ])
-
-    image = transform(image)
-
+    image = image.convert("RGB")
+    imtensor = transform(image)
     gaus = GaussianBlur(5,1)
-    if len(image.size()) == 2:
-        image = image[:,:,None]
-        image = image.repeat(1,1,3)
-        image = image.convert("RGB")
-    image = gaus.forward(image)
-    return image
+    imtensor = gaus.forward(imtensor)
+    return imtensor
 
 def list_im_preprocessing(images:list[Image.Image],imsize=128):
     """applies single_im_preprocessing over teh given list of images, scaling them ro imsize*imsize
@@ -54,7 +50,7 @@ def list_im_preprocessing(images:list[Image.Image],imsize=128):
         imsize(int): the sidelength to which the inputted images should be scaled
     Returns:
             the preprocessed Images, dtype=list[torch.tensor]"""
-    for i in range(len(images)):
+    for i in tqdm(range(len(images))):
         images[i]=single_im_preprocessing(images[i],imsize)
     return images
 
@@ -65,12 +61,9 @@ class Imageset(torch.utils.data.Dataset):
         imspercent= len(temppairs)/100
         split= round(imspercent*80)
         data = list_im_preprocessing([(x[0]) for x in temppairs],imsize)
-        # I'm sorry for this implementation
-        # This is a temporary solution at best
-        # Converts labels from str to int (python doesn't support multiclass lists) while also removing the negative class problem (crossEntropyLoss doesn't support negative classes)
-        # ~Erik
-        # TODO: Make the reclassing happen in a way that works with interface.py
-        labels = [(int(x[1]) + 1) for x in temppairs]
+        print(1)
+        labels = [int(x[1].replace('-','2')) for x in temppairs]
+
         data = shuffle(data,random_state=0)
         labels = shuffle(labels,random_state=0)
         if train:
