@@ -93,4 +93,3 @@ def get_dataloaders(shuffled:bool=False, image_side_length:int=128):
     train_set = DataLoader(Imageset(train=True,storage=data_storage), batch_size=1, shuffle=shuffled)
     valid_set = DataLoader(Imageset(train=False,storage=data_storage), batch_size=1, shuffle=shuffled)
     return train_set,valid_set
-x,y = get_dataloaders(image_side_length=224)
