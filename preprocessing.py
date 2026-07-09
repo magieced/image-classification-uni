@@ -53,24 +53,27 @@ def list_im_preprocessing(images:list[Image.Image],imsize=128):
     for i in tqdm(range(len(images)),desc="preprocessing for the dataset"):
         images[i]=single_im_preprocessing(images[i],imsize)
     return images
+class preprocessed_pair_storage():
+    def __init__(self,imsize:int,):
+        temppairs = im_labels_pair_getter()
+        imspercent = len(temppairs) / 100
+        data = list_im_preprocessing([(x[0]) for x in temppairs], imsize)
+        labels = [int(x[1].replace('-1', '20')) for x in temppairs]
+
+        self.data = shuffle(data, random_state=0)
+        self.labels = shuffle(labels, random_state=0)
+        self.split = round(imspercent * 80)
 
 class Imageset(torch.utils.data.Dataset):
 
-    def __init__(self,train:bool,imsize:int):
-        temppairs= im_labels_pair_getter()
-        imspercent= len(temppairs)/100
-        split= round(imspercent*80)
-        data = list_im_preprocessing([(x[0]) for x in temppairs],imsize)
-        labels = [int(x[1].replace('-1','20')) for x in temppairs]
+    def __init__(self,train:bool,storage:preprocessed_pair_storage):
 
-        data = shuffle(data,random_state=0)
-        labels = shuffle(labels,random_state=0)
         if train:
-            self.data = data[:split]
-            self.labels = labels[:split]
+            self.data = storage.data[:storage.split]
+            self.labels = storage.labels[:storage.split]
         else:
-            self.data = data[split:]
-            self.labels = labels[split:]
+            self.data = storage.data[storage.split:]
+            self.labels = storage.labels[storage.split:]
             #self.cat_dog_label =
 
     def __getitem__(self, item):
@@ -86,7 +89,8 @@ def get_dataloaders(shuffled:bool=False, image_side_length:int=128):
         image_side_length(int): all images in the dataloaders will be resized to squares of this sidelength
     Returns:
         a training(first 80%) and a validation(last 20%) dataloader of the training images"""
-    train_set = DataLoader(Imageset(train=True,imsize=image_side_length), batch_size=1, shuffle=shuffled)
-    valid_set = DataLoader(Imageset(train=False,imsize=image_side_length), batch_size=1, shuffle=shuffled)
+    data_storage = preprocessed_pair_storage(image_side_length)
+    train_set = DataLoader(Imageset(train=True,storage=data_storage), batch_size=1, shuffle=shuffled)
+    valid_set = DataLoader(Imageset(train=False,storage=data_storage), batch_size=1, shuffle=shuffled)
     return train_set,valid_set
 x,y = get_dataloaders(image_side_length=224)
