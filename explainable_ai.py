@@ -2,10 +2,10 @@ import torch
 from captum.attr import Occlusion
 import matplotlib.pyplot as plt
 import numpy as np
-from preprocessing import dataloaders
+from preprocessing import get_dataloaders
 from model import #model
 
-training_data, validation_data = dataloaders(shuffle = False)
+training_data, validation_data = get_dataloaders(shuffled = False)
 
 #device = torch.device("mps" if torch.backends.mps.is_available() else "cpu") wurde empfohlen um das berechen zu beschleunigen 
 
