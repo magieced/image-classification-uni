@@ -158,6 +158,3 @@ def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_fact
     data_storage.augment(augment_factor)
     train_set = DataLoader(Imageset(train=True,storage=data_storage), batch_size=1, shuffle=shuffled)
     return train_set,valid_set
-x,y = get_dataloaders(augment_factor=4)
-print("dataloaders get")
-time.sleep(20)
