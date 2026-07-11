@@ -132,11 +132,24 @@ class Imageset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.data)
 
+class ImagesetFull(torch.utils.data.Dataset):
+
+    def __init__(self,storage:PreprocessedPairStorage):
+
+            self.data = storage.data
+            self.labels = storage.labels
+
+    def __getitem__(self, item):
+        return self.data[item],torch.tensor(self.labels[item])
+
+    def __len__(self):
+        return len(self.data)
+
 def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0):
     """creates and return one dataloader for training and one dataloader for validation
     Args:
-        shuffled(bool): if true the dataloaders get shuffled, a.k.a. the order of the images with their labels gets randomized
-        image_side_length(int): all images in the dataloaders will be resized to squares of this sidelength
+        shuffled(bool): if true the dataloaders get shuffled, a.k.a. the order of the images with their labels gets randomized (default:``False``)
+        image_side_length(int): all images in the dataloaders will be resized to squares of this sidelength (default:``224``)
         augment_factor(int):if 1 or greater multiplies the amount of training data by this number using hide-and-seek data augmentation, if 0 does nothing
          (default:``0``)
     Returns:
@@ -147,5 +160,17 @@ def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_fact
     data_storage.augment(augment_factor)
     train_set = DataLoader(Imageset(train=True,storage=data_storage), batch_size=1, shuffle=shuffled)
     return train_set,valid_set
+def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0):
+    """creates and return one dataloader for training and one dataloader for validation
+        Args:
+            shuffled(bool): if true the dataloader gets shuffled, a.k.a. the order of the images with their labels gets randomized (default:``False``)
+            image_side_length(int): all images in the dataloader will be resized to squares of this sidelength (default:``224``)
+            augment_factor(int):if 1 or greater multiplies the amount of data by this number using hide-and-seek data augmentation, if 0 does nothing
+             (default:``0``)
+        Returns:
+            a training(first 80%[possibly increased trough augment_factor]) and a validation(last 20%) dataloader of the training images"""
+    data_storage = PreprocessedPairStorage(image_side_length)
+    data_storage.augment(augment_factor,val_destructive=False)
+    loader= DataLoader(ImagesetFull(storage=data_storage), batch_size=1,shuffle=shuffled)
 x,y = get_dataloaders()
 print(next(iter(x))[0].size())
