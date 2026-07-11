@@ -172,5 +172,6 @@ def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_f
     data_storage = PreprocessedPairStorage(image_side_length)
     data_storage.augment(augment_factor,val_destructive=False)
     loader= DataLoader(ImagesetFull(storage=data_storage), batch_size=1,shuffle=shuffled)
+    return loader
 x,y = get_dataloaders()
 print(next(iter(x))[0].size())
