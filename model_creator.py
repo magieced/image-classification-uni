@@ -44,13 +44,14 @@ class Net(nn.Module):
         x = self.classifier(x)
         return x
 
-def train_model(use_gpu=False, epochs=1, model_number=0, create_validation_dataloader=True):
+def train_model(use_gpu=False, epochs=1, model_number=0, create_validation_dataloader=True, augment_factor=4):
     """Trains the specified model
     Args:
         use_gpu: whether the GPU should be used to train the model. Requires CUDA
         epochs: the number of epochs used to train the model
         model_number: enum of the model architecture. 0 is efficientnet_b0, 1 is efficientnet_b1, 2 is simple CNN
         create_validation_dataloader: toggles whether this outputs a part of the training set as a validation dataloader. This part doesn't get trained on
+        augment_factor: the increase in dataset size
     Returns:
             the model, a validation set that wasn't trained on"""
     if model_number == 0:
@@ -86,9 +87,9 @@ def train_model(use_gpu=False, epochs=1, model_number=0, create_validation_datal
         image_size = 128
 
     if create_validation_dataloader:
-        train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=True, image_side_length=image_size, augment_factor=0)
+        train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=True, image_side_length=image_size, augment_factor=augment_factor)
     else:
-        train_loader = preprocessing.get_one_dataloader(shuffled=True, image_side_length=image_size, augment_factor=4)
+        train_loader = preprocessing.get_one_dataloader(shuffled=True, image_side_length=image_size, augment_factor=augment_factor)
 
     for parameter in model.parameters():
         parameter.requries_grad = True
