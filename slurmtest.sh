@@ -1,2 +1,3 @@
+#!/bin/sh
 #sbash --job-name=conrads-slurm-test
-python slurmtest.py
+python slurmtest.pynao
