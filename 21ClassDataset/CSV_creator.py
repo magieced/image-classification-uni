@@ -25,6 +25,15 @@ import os
         # database. In 2009 IEEE conference on computer vision and
         # pattern recognition, pages 248–255. IEEE, 2009.
 
+# Citation Cat Breeds Dataset
+    # Dataset from Kaggle
+        # Cat Breeds Dataset: https://www.kaggle.com/datasets/ma7555/cat-breeds-dataset
+        # Dataset made available by:
+            # PetFinder API: https://www.petfinder.com
+            # aschlg: petpy: https://github.com/aschleg/petpy
+            # User (ma7555): multiprocess image downloader: https://github.com/ma7555/petpy/blob/new/notebooks/03-Download%20Pure%20Breeds%20Cat%20Images%20with%20petpy%20for%20Deep%20Neural%20Network%20training%20-%20multiprocessing.ipynb
+
+
 # To note: per class there are 199 images from the above cited datasets
         # amounting to a total image count of 4179 images
 
