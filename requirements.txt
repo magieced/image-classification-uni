@@ -1,8 +1,6 @@
 torch
 torchvision
 tqdm
-random
-os
 PIL
 numpy
 sklearn
