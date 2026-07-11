@@ -1,6 +1,5 @@
 import os 
 # Citations
-
  # Citation of The Oxford-IIIT Pet Dataset
     # Dataset from Kaggle: https://www.kaggle.com/datasets/tanlikesmath/the-oxfordiiit-pet-dataset?resource=download
     # Paper
@@ -46,8 +45,8 @@ import os
         # ImageNet: A Large-Scale Hierarchical Image Database. 
         # IEEE Computer Vision and Pattern Recognition (CVPR), 2009.
 
-# To note: per class there are 199 images from the above cited datasets
-        # amounting to a total image count of 4179 images
+# To note: images are from the above cited datasets
+        # amounting to a total image count of 6600 images
 
 list_of_classes = ["REJECT", "Abyssinian", "Bengal", "Birman", "Bombay", 
                    "British_Shorthair", "Maine_Coon", "Ragdoll", 
