@@ -1,14 +1,8 @@
-import os # TODO: What is this import for? It seems to be unused ~Erik
 import random
-import time
-from logging import fatal
-from os import read, error
-from unittest.mock import patch
+from os import error
 
 from PIL import Image
 import torch
-from matplotlib import pyplot as plt
-from networkx.classes import non_neighbors
 from torch.utils.data import DataLoader
 from torchvision.transforms import GaussianBlur
 import numpy as np
@@ -37,18 +31,13 @@ def single_im_preprocessing(image:Image.Image,imsize=224)->torch.Tensor: # chang
         imsize(int): the sidelength to which the inputted image should be scaled
     Returns:
             the preprocessed Image, dtype=torch.Tensor"""
-    # Swapped from the previous implementation to transform images into C H W format ~Erik
-    transform = transforms.Compose([
-        transforms.Resize((imsize,imsize)),
-        transforms.ToTensor()
-    ])
     image = image.convert("RGB")
+    gaus = GaussianBlur(5, 1)
+    image = gaus.forward(image)
     image = image.resize((imsize,imsize))
     imarray = np.array(image)
     imtensor = torch.tensor(imarray)
     imtensor = imtensor.permute(2,0,1) #[H,W,C]->[C,H,W]
-    gaus = GaussianBlur(5,1)
-    imtensor = gaus.forward(imtensor)
     return imtensor/255
 
 def list_im_preprocessing(images:list[Image.Image],imsize=128)->list[torch.Tensor]:
@@ -158,3 +147,5 @@ def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_fact
     data_storage.augment(augment_factor)
     train_set = DataLoader(Imageset(train=True,storage=data_storage), batch_size=1, shuffle=shuffled)
     return train_set,valid_set
+x,y = get_dataloaders()
+print(next(iter(x))[0].size())
