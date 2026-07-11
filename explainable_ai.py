@@ -32,12 +32,10 @@ for input_tensor, i in validation_data:
         target = predicted_class, #muss evtl noch angepasst werden für jede klasse
         sliding_window_shapes = (3,15,15), #bestimmt die größe des abgedeckten Bereichs
         strides = (3,8,8) #schritt weite je kleiner desto präziser bnötigt aber mehr rechenkapazität
-
     )
 
     heatmap = attribute.squeeze(0).detach().numpy().mean(axis= 0)
     #heatmap = attribute.squeeze(0).cpu().detach().numpy().mean(axis= 0)#wenn über gpu
-
 
     heatmaps.append(heatmap)
     true_labels.append(true_class)

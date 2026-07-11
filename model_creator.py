@@ -7,24 +7,44 @@ import torch.nn.functional as F
 
 class Net(nn.Module):
     def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(3, 128, 128)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 16)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 21)
+        super().__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 32, kernel_size=3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2),                # (32, 64, 64)
+
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2),                # (64, 32, 32)
+
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2),                # (128, 16, 16)
+
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2),                # (256, 8, 8)
+
+            nn.AdaptiveAvgPool2d((1, 1))    # (256, 1, 1)
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Flatten(),
+            nn.Dropout(0.5),
+            nn.Linear(256, 21)              # Hardcoded as we always have 21 classes
+        )
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 16 * 5 * 5)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = self.features(x)
+        x = self.classifier(x)
         return x
 
-def train_model(use_gpu=False, epochs=3, model_number=0, create_validation_dataloader=True):
+def train_model(use_gpu=False, epochs=1, model_number=0, create_validation_dataloader=True):
     """Trains the specified model
     Args:
         use_gpu: whether the GPU should be used to train the model. Requires CUDA
@@ -47,13 +67,26 @@ def train_model(use_gpu=False, epochs=3, model_number=0, create_validation_datal
             21 # Number of classes. Hardcoded as we don't need to change it
         )
         image_size = 224
+    elif model_number == 2:
+        model = models.efficientnet_b2(weights=None)
+        model.classifier[1] = torch.nn.Linear(
+            model.classifier[1].in_features,
+            21 # Number of classes. Hardcoded as we don't need to change it
+        )
+        image_size = 224
+    elif model_number == 3:
+        model = models.efficientnet_b3(weights=None)
+        model.classifier[1] = torch.nn.Linear(
+            model.classifier[1].in_features,
+            21 # Number of classes. Hardcoded as we don't need to change it
+        )
+        image_size = 224
     else:
         model = Net()
         image_size = 128
 
-
     if create_validation_dataloader:
-        train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=True, image_side_length=image_size, augment_factor=4)
+        train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=True, image_side_length=image_size, augment_factor=0)
     else:
         train_loader = preprocessing.get_one_dataloader(shuffled=True, image_side_length=image_size, augment_factor=4)
 
@@ -107,11 +140,11 @@ def train_model(use_gpu=False, epochs=3, model_number=0, create_validation_datal
             relative_change = abs(losses[-2] - losses[-1]) / losses[-2]
 
             if relative_change < 1e-3:
+                epochs = epoch
                 print(f"Stopping early at epoch {epoch}")
-                epoch
                 break
 
-    torch.save(model.state_dict(), str(model_number) + "_" + str(epoch) + "_weights")
+    torch.save(model.state_dict(), str(model_number) + "_" + str(epochs) + "_weights")
     if create_validation_dataloader:
         return model, validation_loader
     else:
