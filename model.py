@@ -21,3 +21,4 @@ def train_test_models():
     file.write("b3 accuracy: " + str(accuracy3) + "\n")
     file.write("Simple CNN accuracy: " + str(accuracy4) + "\n")
     file.close()
+train_test_models()
