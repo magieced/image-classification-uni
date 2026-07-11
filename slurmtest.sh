@@ -1,4 +1,4 @@
 #!/bin/sh
 #sbash --job-name=conrads-slurm-test
-#sbash --partition=All
+#sbash --partition=AMD
 python slurmtest.py
