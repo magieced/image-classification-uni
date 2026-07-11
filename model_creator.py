@@ -145,7 +145,7 @@ def train_model(use_gpu=False, epochs=1, model_number=0, create_validation_datal
                 print(f"Stopping early at epoch {epoch}")
                 break
 
-    torch.save(model.state_dict(), str(model_number) + "_" + str(epochs) + "_weights")
+    torch.save(model.state_dict(), str(model_number) + "_" + str(epochs) + "_" + str(augment_factor) + "_weights")
     if create_validation_dataloader:
         return model, validation_loader
     else:
