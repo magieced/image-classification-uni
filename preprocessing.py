@@ -1,14 +1,8 @@
-import os # TODO: What is this import for? It seems to be unused ~Erik
 import random
-import time
-from logging import fatal
-from os import read, error
-from unittest.mock import patch
+from os import error
 
 from PIL import Image
 import torch
-from matplotlib import pyplot as plt
-from networkx.classes import non_neighbors
 from torch.utils.data import DataLoader
 from torchvision.transforms import GaussianBlur
 import numpy as np
