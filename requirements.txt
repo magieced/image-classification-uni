@@ -3,4 +3,4 @@ torchvision
 tqdm
 pillow
 numpy
-sklearn
+scikit-learn
