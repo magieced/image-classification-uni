@@ -8,12 +8,12 @@ import torch.nn.functional as F
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(3, 6, 5)
+        self.conv1 = nn.Conv2d(3, 128, 128)
         self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.conv2 = nn.Conv2d(6, 16, 16)
         self.fc1 = nn.Linear(16 * 5 * 5, 120)
         self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+        self.fc3 = nn.Linear(84, 21)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
@@ -24,15 +24,15 @@ class Net(nn.Module):
         x = self.fc3(x)
         return x
 
-def train_model(use_gpu = False, epochs = 3, model_number = 0):
+def train_model(use_gpu=False, epochs=3, model_number=0, create_validation_dataloader=True):
     """Trains the specified model
     Args:
         use_gpu: whether the GPU should be used to train the model. Requires CUDA
         epochs: the number of epochs used to train the model
         model_number: enum of the model architecture. 0 is efficientnet_b0, 1 is efficientnet_b1, 2 is simple CNN
+        create_validation_dataloader: toggles whether this outputs a part of the training set as a validation dataloader. This part doesn't get trained on
     Returns:
             the model, a validation set that wasn't trained on"""
-    # TODO: Make the model train on all images in the dataset and use the external validation dataset as a validation dataset instead
     if model_number == 0:
         model = models.efficientnet_b0(weights=None)
         model.classifier[1] = torch.nn.Linear(
@@ -51,7 +51,11 @@ def train_model(use_gpu = False, epochs = 3, model_number = 0):
         model = Net()
         image_size = 128
 
-    train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=True, image_side_length=image_size, augment_factor=4)
+
+    if create_validation_dataloader:
+        train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=True, image_side_length=image_size, augment_factor=4)
+    else:
+        train_loader = preprocessing.get_one_dataloader(shuffled=True, image_side_length=image_size, augment_factor=4)
 
     for parameter in model.parameters():
         parameter.requries_grad = True
@@ -108,7 +112,10 @@ def train_model(use_gpu = False, epochs = 3, model_number = 0):
                 break
 
     torch.save(model.state_dict(), str(model_number) + "_" + str(epoch) + "_weights")
-    return model, validation_loader
+    if create_validation_dataloader:
+        return model, validation_loader
+    else:
+        return model
 
 def evaluate_model(model, validation_loader):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
