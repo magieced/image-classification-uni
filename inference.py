@@ -21,7 +21,8 @@ metrics.
 import argparse
 import random
 from pathlib import Path
-
+import torchvision.models as models
+import preprocessing
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -64,9 +65,15 @@ class Model(nn.Module):
     Contract: given a PIL image, return a class index in {-1, 0, ..., 19}.
     The placeholder below is a uniform random guesser so the script runs.
     """
+    def __init__(self):
+        self.model = models.efficientnet_b0(weights = "efficientnetb0_weights_V0")
 
     def forward(self, image: Image.Image) -> int:
-        return random.randint(-1, NUM_CLASSES - 1)
+        image = preprocessing.single_im_preprocessing(Image)
+        label = self.model(image)
+        if label == 20:
+            label = -1
+        return label
 
 
 if __name__ == "__main__":
