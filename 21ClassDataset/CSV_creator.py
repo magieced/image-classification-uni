@@ -33,6 +33,18 @@ import os
             # aschlg: petpy: https://github.com/aschleg/petpy
             # User (ma7555): multiprocess image downloader: https://github.com/ma7555/petpy/blob/new/notebooks/03-Download%20Pure%20Breeds%20Cat%20Images%20with%20petpy%20for%20Deep%20Neural%20Network%20training%20-%20multiprocessing.ipynb
 
+# Citation Stanford Dogs Datasets (uses images from ImageNet)
+    # Dataset from Kaggle
+        # Standford Dogs Dataset: https://www.kaggle.com/datasets/jessicali9530/stanford-dogs-dataset
+    # Paper of Stanford Dogs Dataset (Primary source)
+        # Aditya Khosla, Nityananda Jayadevaprakash, Bangpeng Yao 
+        # and Li Fei-Fei. Novel dataset for Fine-Grained Image Categorization. 
+        # First Workshop on Fine-Grained Visual Categorization (FGVC), 
+        # IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2011.
+    # Paper of Stanford Dogs Dataset (Secondary source)
+        # J. Deng, W. Dong, R. Socher, L.-J. Li, K. Li and L. Fei-Fei, 
+        # ImageNet: A Large-Scale Hierarchical Image Database. 
+        # IEEE Computer Vision and Pattern Recognition (CVPR), 2009.
 
 # To note: per class there are 199 images from the above cited datasets
         # amounting to a total image count of 4179 images
