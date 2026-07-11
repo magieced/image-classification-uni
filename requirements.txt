@@ -1,6 +1,6 @@
 torch
 torchvision
 tqdm
-PIL
+pillow
 numpy
 sklearn
