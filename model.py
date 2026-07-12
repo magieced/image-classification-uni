@@ -35,7 +35,7 @@ def train_test_models():
     del(validation3)
     file.close()
 
-    #model4, validation4 = model_creator.train_model(use_gpu=True, epochs=20, model_number=4,create_validation_dataloader=True)
+    #model4, validation4 = model_creator.train_model(use_gpu=True, epochs=20, model_number=4,create_validation_dataloader=True, batch_size=32)
     #accuracy4 = model_creator.evaluate_model(model4, validation4)
     #file.write("Simple CNN accuracy: " + str(accuracy4) + "\n")
     #del(model4)
@@ -43,7 +43,7 @@ def train_test_models():
     #file.close()
 
     #file = open("accuracy_list.txt", 'a')
-    #model5, validation5 = model_creator.train_model(use_gpu=True, epochs=20, model_number=4, create_validation_dataloader=True, augment_factor=0)
+    #model5, validation5 = model_creator.train_model(use_gpu=True, epochs=20, model_number=4, create_validation_dataloader=True, augment_factor=0, batch_size=32)
     #accuracy5 = model_creator.evaluate_model(model5, validation5)
     #file.write("Simple CNN accuracy with 0 augmentation_factor: " + str(accuracy5) + "\n")
     #del(model5)
@@ -51,7 +51,7 @@ def train_test_models():
     #file.close()
 
     #file = open("accuracy_list.txt", 'a')
-    #model6, validation6 = model_creator.train_model(use_gpu=True, epochs=20, model_number=4,create_validation_dataloader=True, augment_factor=1)
+    #model6, validation6 = model_creator.train_model(use_gpu=True, epochs=20, model_number=4,create_validation_dataloader=True, augment_factor=1, batch_size=32)
     #accuracy6 = model_creator.evaluate_model(model6, validation6)
     #file.write("Simple CNN accuracy with 1 augmentation_factor: " + str(accuracy6) + "\n")
     #del(model6)
