@@ -97,7 +97,7 @@ class PreprocessedPairStorage():
              otherwise the function automatically round down to the nearest int that fulfills these conditions(default: ``16``)
         """
         if factor<1 or self.augmented:
-            return
+            return self
         else:
             patch_side:int= int(patches**0.5)
             patch_side_length:int = int(self.data[1].size()[1]/patch_side)
