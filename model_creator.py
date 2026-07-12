@@ -107,23 +107,28 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
 
     model.train()
 
-    data_storage = preprocessing.PreprocessedPairStorage(image_size)
-    if create_validation_dataloader == True:
-        validation_loader = torch.utils.data.DataLoader(preprocessing.Imageset(train=False,storage=data_storage), batch_size=32, shuffle=False)
+    if create_validation_dataloader:
+        train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=True, image_side_length=image_size, augment_factor=augment_factor)
+    else:
+        train_loader = preprocessing.get_one_dataloader(shuffled=True, image_side_length=image_size, augment_factor=augment_factor)
+
+    #data_storage = preprocessing.PreprocessedPairStorage(image_size)
+    #if create_validation_dataloader == True:
+    #    validation_loader = torch.utils.data.DataLoader(preprocessing.Imageset(train=False,storage=data_storage), batch_size=32, shuffle=False)
 
     losses = []
     for epoch in tqdm(range(epochs), desc='Epoch'):
         epoch_loss = 0.0
 
-        if epoch == 0 or augment_factor >= 1:
-            if create_validation_dataloader:
-                train_loader = torch.utils.data.DataLoader(preprocessing.Imageset(train=True,
-                    storage=data_storage.augment(factor=augment_factor, copy=True, val_destructive=True)
-                    ), batch_size=32, shuffle=True)
-            else:
-                train_loader = torch.utils.data.DataLoader(preprocessing.ImagesetFull(
-                    storage=data_storage.augment(factor=augment_factor, copy=True, val_destructive=True)
-                    ), batch_size=32, shuffle=True)
+        #if epoch == 0 or augment_factor >= 1:
+        #    if create_validation_dataloader:
+        #        train_loader = torch.utils.data.DataLoader(preprocessing.Imageset(train=True,
+        #            storage=data_storage.augment(factor=augment_factor, copy=True, val_destructive=True)
+        #            ), batch_size=32, shuffle=True)
+        #    else:
+        #        train_loader = torch.utils.data.DataLoader(preprocessing.ImagesetFull(
+        #            storage=data_storage.augment(factor=augment_factor, copy=True, val_destructive=True)
+        #            ), batch_size=32, shuffle=True)
 
         for step, (example, label) in enumerate(tqdm(train_loader, desc='Batch')):
             if use_gpu:
