@@ -44,7 +44,7 @@ class Net(nn.Module):
         x = self.classifier(x)
         return x
 
-def train_model(use_gpu=False, epochs=1, model_number=0, create_validation_dataloader=True, augment_factor=4):
+def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_dataloader=True, augment_factor=0):
     """Trains the specified model
     Args:
         use_gpu: whether the GPU should be used to train the model. Requires CUDA
@@ -114,14 +114,12 @@ def train_model(use_gpu=False, epochs=1, model_number=0, create_validation_datal
 
     losses = []
     for epoch in tqdm(range(epochs), desc='Epoch'):
-        epoch_loss = 0.0
+        epoch_loss = 0.01
 
         for step, (example, label) in enumerate(tqdm(train_loader, desc='Batch')):
             if use_gpu:
                 example = example.cuda()
                 label = label.cuda()
-
-            example = example.float()
 
             optimizer.zero_grad()
 
@@ -129,9 +127,10 @@ def train_model(use_gpu=False, epochs=1, model_number=0, create_validation_datal
 
             loss = criterion(prediction, label)
 
-            losses.append(loss.item())
-
             loss.backward()
+            losses.append(loss.cpu().detach().numpy())
+
+            optimizer.step()
         
         epoch_loss /= len(train_loader)
         losses.append(epoch_loss)
@@ -182,5 +181,3 @@ To load a model, do the following:
     models.efficientnet_b0(weights = "[Model weights name]")
 Replace the name of the model with whichever one you need (don't forget to import torchvision.models as models)
 """
-
-train_model()
