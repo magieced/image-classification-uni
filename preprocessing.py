@@ -160,7 +160,7 @@ class ImagesetFull(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.data)
 
-def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0):
+def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0,train_batch_size=8):
     """creates and return one dataloader for training and one dataloader for validation
     Args:
         shuffled(bool): if true the dataloaders get shuffled, a.k.a. the order of the images with their labels gets randomized (default:``False``)
@@ -173,13 +173,13 @@ def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_fact
 
     valid_set = DataLoader(Imageset(train=False,storage=data_storage), batch_size=1, shuffle=shuffled)
     data_storage.augment(augment_factor)
-    train_set = DataLoader(Imageset(train=True,storage=data_storage), batch_size=32, shuffle=shuffled)
+    train_set = DataLoader(Imageset(train=True,storage=data_storage), batch_size=train_batch_size, shuffle=shuffled)
     return train_set,valid_set
 
-def get_augmented_dataloader_from_augmented_storage(shuffle:bool, augmented_storage:PreprocessedPairStorage):
-    return DataLoader(ImagesetFull(storage=augmented_storage), batch_size=32, shuffle=shuffle)
+def get_augmented_dataloader_from_augmented_storage(shuffle:bool, augmented_storage:PreprocessedPairStorage,batch_size=8):
+    return DataLoader(ImagesetFull(storage=augmented_storage), batch_size=8, shuffle=shuffle)
 
-def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0):
+def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0,batch_size=batch_size):
     """creates and return one dataloader for training and one dataloader for validation
         Args:
             shuffled(bool): if true the dataloader gets shuffled, a.k.a. the order of the images with their labels gets randomized (default:``False``)
@@ -190,5 +190,5 @@ def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_f
             a training(first 80%[possibly increased trough augment_factor]) and a validation(last 20%) dataloader of the training images"""
     data_storage = PreprocessedPairStorage(image_side_length)
     data_storage.augment(augment_factor,val_destructive=False)
-    loader= DataLoader(ImagesetFull(storage=data_storage), batch_size=32,shuffle=shuffled)
+    loader= DataLoader(ImagesetFull(storage=data_storage), batch_size=batch_size,shuffle=shuffled)
     return loader
