@@ -13,6 +13,11 @@ heatmaps = []
 true_labels = []
 predicted_labels = []
 
+#man ruft getocclusion auf und übergibt die parameter die man haben möchte
+#window = wie groß das patch sein soll hier immer Quadratisch
+#stride = schritteweite
+
+
 def getocclusion(model_number, weigth_number, window, stride, picuture_index):
     global heatmaps, true_labels, predicted_labels
     heatmaps = []
