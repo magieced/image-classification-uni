@@ -92,7 +92,7 @@ def train_model(use_gpu=False, epochs=1, model_number=0, create_validation_datal
         train_loader = preprocessing.get_one_dataloader(shuffled=True, image_side_length=image_size, augment_factor=augment_factor)
 
     for parameter in model.parameters():
-        parameter.requries_grad = True
+        parameter.requires_grad = True
 
     optimizer = torch.optim.AdamW(
         model.parameters(),
@@ -182,3 +182,5 @@ To load a model, do the following:
     models.efficientnet_b0(weights = "[Model weights name]")
 Replace the name of the model with whichever one you need (don't forget to import torchvision.models as models)
 """
+
+train_model()

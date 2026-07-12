@@ -40,7 +40,7 @@ def train_test_models():
     del(model5)
     del(validation5)
 
-    model6, validation6 = model_creator.train_model(use_gpu=True, epochs=20, model_number=6,create_validation_dataloader=True, augment_factor=1)
+    model6, validation6 = model_creator.train_model(use_gpu=True, epochs=20, model_number=4,create_validation_dataloader=True, augment_factor=1)
     accuracy6 = model_creator.evaluate_model(model6, validation6)
     file.write("Simple CNN accuracy with 1 augmentation_factor: " + str(accuracy6) + "\n")
     del(model6)
