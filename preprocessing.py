@@ -61,6 +61,12 @@ def image_hide_and_seek(image:torch.Tensor,patches_side:int,patches_length:int)-
                 image[:,hdim:hdim+patches_length,wdim:wdim+patches_length] = 0
     return image
 class PreprocessedPairStorage():
+    def __init__(self,imsize:int,data,labels,augmented):
+        self.data = data
+        self.labels = labels
+        self.split=round((len(data)/100)*80)
+        self.augmented=augmented
+
     def __init__(self,imsize:int,):
         temppairs = im_labels_pair_getter()
         imspercent = len(temppairs) / 100
@@ -72,7 +78,8 @@ class PreprocessedPairStorage():
         self.split:int = round(imspercent * 80)
         self.augmented:bool=False
 
-    def augment(self,factor:int,val_destructive:bool=True,patches:int=16):
+
+    def augment(self,factor:int,val_destructive:bool=True,patches:int=16,copy:bool=False):
         """augments the data through the hide-and-seek algorithm
         (dividing the image into 16 patches and blacking out each one with a 50% chance)
         this is done factor times per image to expand the data factor times.
@@ -108,9 +115,13 @@ class PreprocessedPairStorage():
                     new_data[index] = image_hide_and_seek(self.data[old_index],patch_side,patch_side_length)
                     new_labels[index] = self.labels[old_index]
                 self.split=self.split*factor
-            self.data = new_data
-            self.labels = new_labels
-            self.augmented = True
+            if copy:
+                return PreprocessedPairStorage(self.data[1].size()[1],new_data,new_labels,True)
+            else:
+                self.data = new_data
+                self.labels = new_labels
+                self.augmented = True
+                return self
 
 
 
@@ -160,6 +171,10 @@ def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_fact
     data_storage.augment(augment_factor)
     train_set = DataLoader(Imageset(train=True,storage=data_storage), batch_size=32, shuffle=shuffled)
     return train_set,valid_set
+
+def get_augmented_dataloader_from_augmented_storage(shuffle:bool,im_sidelength:int,augmented_storeage:PreprocessedPairStorage):
+    return DataLoader(ImagesetFull(storage=augmented_storeage),batch_size=32,shuffle=shuffle)
+
 def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0):
     """creates and return one dataloader for training and one dataloader for validation
         Args:
