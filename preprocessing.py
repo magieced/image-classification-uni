@@ -172,8 +172,8 @@ def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_fact
     train_set = DataLoader(Imageset(train=True,storage=data_storage), batch_size=32, shuffle=shuffled)
     return train_set,valid_set
 
-def get_augmented_dataloader_from_augmented_storage(shuffle:bool,im_sidelength:int,augmented_storeage:PreprocessedPairStorage):
-    return DataLoader(ImagesetFull(storage=augmented_storeage),batch_size=32,shuffle=shuffle)
+def get_augmented_dataloader_from_augmented_storage(shuffle:bool, augmented_storage:PreprocessedPairStorage):
+    return DataLoader(ImagesetFull(storage=augmented_storage), batch_size=32, shuffle=shuffle)
 
 def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0):
     """creates and return one dataloader for training and one dataloader for validation
