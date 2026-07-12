@@ -179,7 +179,7 @@ def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_fact
 def get_augmented_dataloader_from_augmented_storage(shuffle:bool, augmented_storage:PreprocessedPairStorage,batch_size=8):
     return DataLoader(ImagesetFull(storage=augmented_storage), batch_size=8, shuffle=shuffle)
 
-def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0,batch_size=batch_size):
+def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0,batch_size=8):
     """creates and return one dataloader for training and one dataloader for validation
         Args:
             shuffled(bool): if true the dataloader gets shuffled, a.k.a. the order of the images with their labels gets randomized (default:``False``)
