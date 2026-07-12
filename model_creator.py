@@ -44,7 +44,7 @@ class Net(nn.Module):
         x = self.classifier(x)
         return x
 
-def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_dataloader=True, augment_factor=0):
+def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_dataloader=True, augment_factor=0, reaugment_every_epoch=True):
     """Trains the specified model
     Args:
         use_gpu: whether the GPU should be used to train the model. Requires CUDA
@@ -52,6 +52,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         model_number: enum of the model architecture. 0 is efficientnet_b0, 1 is efficientnet_b1, 2 is simple CNN
         create_validation_dataloader: toggles whether this outputs a part of the training set as a validation dataloader. This part doesn't get trained on
         augment_factor: the increase in dataset size
+        reagument_every_epoch: toggles whether the data is augmented from scratch every epoch to reduce overfitting
     Returns:
             the model, a validation set that wasn't trained on"""
     if model_number == 0:
@@ -107,28 +108,30 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
 
     model.train()
 
-    if create_validation_dataloader:
-        train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=True, image_side_length=image_size, augment_factor=augment_factor)
+    if reaugment_every_epoch:
+        data_storage = preprocessing.PreprocessedPairStorage(image_size)
+        if create_validation_dataloader == True:
+            validation_loader = torch.utils.data.DataLoader(preprocessing.Imageset(train=False,storage=data_storage), batch_size=32, shuffle=False)
     else:
-        train_loader = preprocessing.get_one_dataloader(shuffled=True, image_side_length=image_size, augment_factor=augment_factor)
+        if create_validation_dataloader:
+            train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=True, image_side_length=image_size, augment_factor=augment_factor)
+        else:
+            train_loader = preprocessing.get_one_dataloader(shuffled=True, image_side_length=image_size, augment_factor=augment_factor)
 
-    #data_storage = preprocessing.PreprocessedPairStorage(image_size)
-    #if create_validation_dataloader == True:
-    #    validation_loader = torch.utils.data.DataLoader(preprocessing.Imageset(train=False,storage=data_storage), batch_size=32, shuffle=False)
 
     losses = []
     for epoch in tqdm(range(epochs), desc='Epoch'):
         epoch_loss = 0.0
 
-        #if epoch == 0 or augment_factor >= 1:
-        #    if create_validation_dataloader:
-        #        train_loader = torch.utils.data.DataLoader(preprocessing.Imageset(train=True,
-        #            storage=data_storage.augment(factor=augment_factor, copy=True, val_destructive=True)
-        #            ), batch_size=32, shuffle=True)
-        #    else:
-        #        train_loader = torch.utils.data.DataLoader(preprocessing.ImagesetFull(
-        #            storage=data_storage.augment(factor=augment_factor, copy=True, val_destructive=True)
-        #            ), batch_size=32, shuffle=True)
+        if reaugment_every_epoch and (epoch == 0 or augment_factor >= 1) :
+            if create_validation_dataloader:
+                train_loader = torch.utils.data.DataLoader(preprocessing.Imageset(train=True,
+                    storage=data_storage.augment(factor=augment_factor, copy=True, val_destructive=True)
+                    ), batch_size=32, shuffle=True)
+            else:
+                train_loader = torch.utils.data.DataLoader(preprocessing.ImagesetFull(
+                    storage=data_storage.augment(factor=augment_factor, copy=True, val_destructive=True)
+                    ), batch_size=32, shuffle=True)
 
         for step, (example, label) in enumerate(tqdm(train_loader, desc='Batch')):
             if use_gpu:
