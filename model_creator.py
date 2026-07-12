@@ -90,13 +90,10 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=True, image_side_length=image_size, augment_factor=augment_factor)
     else:
         train_loader = preprocessing.get_one_dataloader(shuffled=True, image_side_length=image_size, augment_factor=augment_factor)
-
-    for parameter in model.parameters():
-        parameter.requires_grad = True
-
+    
     optimizer = torch.optim.AdamW(
         model.parameters(),
-        lr = 0.01,
+        lr=1.e-4
     )
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -109,31 +106,35 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
     criterion = torch.nn.CrossEntropyLoss()
 
     if use_gpu:
-        model.cuda()
+        device = torch.device("cuda" if use_gpu else "cpu")
+        model.to(device)
         criterion.cuda()
+
+    model.train()
 
     losses = []
     for epoch in tqdm(range(epochs), desc='Epoch'):
-        epoch_loss = 0.01
+        epoch_loss = 0.0
 
         for step, (example, label) in enumerate(tqdm(train_loader, desc='Batch')):
             if use_gpu:
-                example = example.cuda()
-                label = label.cuda()
-
-            optimizer.zero_grad()
+                example = example.to(device)
+                label = label.to(device)
 
             prediction = model(example)
 
             loss = criterion(prediction, label)
 
+            optimizer.zero_grad()
             loss.backward()
-            losses.append(loss.cpu().detach().numpy())
-
             optimizer.step()
-        
+
+            epoch_loss += loss.item()
+        scheduler.step()
+
         epoch_loss /= len(train_loader)
         losses.append(epoch_loss)
+        print(epoch, epoch_loss / len(train_loader))
 
         # Stop if relative improvement is too small
         if len(losses) > 1:
