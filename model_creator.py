@@ -155,7 +155,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         print(epoch, epoch_loss / len(train_loader))
 
         # Stop if relative improvement is too small
-        if len(losses) > 1:
+        if len(losses) > 1 and (not reaugment_every_epoch):
             relative_change = abs(losses[-2] - losses[-1]) / losses[-2]
 
             if relative_change < 1e-3:
