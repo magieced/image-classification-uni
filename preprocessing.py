@@ -61,22 +61,26 @@ def image_hide_and_seek(image:torch.Tensor,patches_side:int,patches_length:int)-
                 image[:,hdim:hdim+patches_length,wdim:wdim+patches_length] = 0
     return image
 class PreprocessedPairStorage():
-    def __init__(self,imsize:int,data,labels,augmented):
-        self.data = data
-        self.labels = labels
-        self.split=round((len(data)/100)*80)
-        self.augmented=augmented
 
-    def __init__(self,imsize:int,):
-        temppairs = im_labels_pair_getter()
-        imspercent = len(temppairs) / 100
-        data = list_im_preprocessing([(x[0]) for x in temppairs], imsize)
-        labels = [int(x[1].replace('-1', '20')) for x in temppairs]
 
-        self.data:list[torch.Tensor] = shuffle(data, random_state=0)
-        self.labels:list[int] = shuffle(labels, random_state=0)
-        self.split:int = round(imspercent * 80)
-        self.augmented:bool=False
+    def __init__(self,imsize:int,data=None,labels=None,augmented:bool=False):
+        if data is None and labels is None:
+            temppairs = im_labels_pair_getter()
+            imspercent = len(temppairs) / 100
+            data = list_im_preprocessing([(x[0]) for x in temppairs], imsize)
+            labels = [int(x[1].replace('-1', '20')) for x in temppairs]
+
+            self.data:list[torch.Tensor] = shuffle(data, random_state=0)
+            self.labels:list[int] = shuffle(labels, random_state=0)
+            self.split:int = round(imspercent * 80)
+            self.augmented:bool=False
+        elif not(data is None or labels is None):
+            self.data = data
+            self.labels = labels
+            self.split=round((len(data)/100)*80)
+            self.augmented=augmented
+        else:
+            raise error("illegal init of PreprocessedPairStorage")
 
 
     def augment(self,factor:int,val_destructive:bool=True,patches:int=16,copy:bool=False):
