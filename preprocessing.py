@@ -1,15 +1,15 @@
 import random
 from os import error
 
+import matplotlib.pyplot as plt
 from PIL import Image
 import torch
 from torch.utils.data import DataLoader
 from torchvision.transforms import GaussianBlur
+from torchvision import datasets,transforms
 import numpy as np
 from sklearn.utils import shuffle
 from tqdm import tqdm
-
-from torchvision import transforms
 
 def im_labels_pair_getter(folder="21ClassDataset/",label_file="labels_21ClassDataset.csv"):
     labels=open(folder+label_file)
@@ -36,7 +36,7 @@ def single_im_preprocessing(image:Image.Image,imsize=224)->torch.Tensor: # chang
     image = gaus.forward(image)
     image = image.resize((imsize,imsize))
     imarray = np.array(image)
-    imtensor = torch.tensor(imarray)
+    imtensor=torch.tensor(imarray)
     imtensor = imtensor.permute(2,0,1) #[H,W,C]->[C,H,W]
     return imtensor/255
 
@@ -128,22 +128,24 @@ class PreprocessedPairStorage():
                 return self
 
 
-
 class Imageset(torch.utils.data.Dataset):
 
     def __init__(self,train:bool,storage:PreprocessedPairStorage):
-
+        self.train=train
         if train:
             self.data = storage.data[:storage.split]
+            random.choice((1,2,3))
+            self.flip=transforms.RandomHorizontalFlip(0.5)
+
             self.labels = storage.labels[:storage.split]
         else:
             self.data = storage.data[storage.split:]
             self.labels = storage.labels[storage.split:]
-            #self.cat_dog_label =
-
     def __getitem__(self, item):
-        return self.data[item],torch.tensor(self.labels[item])
-
+        if self.train:
+            return self.flip(self.data[item]),torch.tensor(self.labels[item])
+        else:
+            return self.data[item], torch.tensor(self.labels[item])
     def __len__(self):
         return len(self.data)
 
@@ -159,6 +161,7 @@ class ImagesetFull(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.data)
+
 
 def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0,train_batch_size=8):
     """creates and return one dataloader for training and one dataloader for validation
@@ -192,3 +195,9 @@ def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_f
     data_storage.augment(augment_factor,val_destructive=False)
     loader= DataLoader(ImagesetFull(storage=data_storage), batch_size=batch_size,shuffle=shuffled)
     return loader
+#x,y =get_dataloaders()
+#a=next(iter(y))[0]
+#b=torch.squeeze(a)
+#c=b.permute(1,2,0)
+#plt.imshow(c)
+#plt.show()
