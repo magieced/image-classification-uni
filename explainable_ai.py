@@ -5,14 +5,23 @@ import numpy as np
 import preprocessing 
 import model_creator
 import torchvision.models as models
-import model.py
 
 
-data = preprocessing.get_one_dataloader(shuffled=False, image_side_length=224, augment_factor=0)
+
+data = preprocessing.get_one_dataloader(shuffled=False, image_side_length=224, augment_factor=0,batch_size=1)
 
 heatmaps = []
 true_labels = []
 predicted_labels = []
+
+#important if u dont have a GPU u need to set GPU = false at line 46 in model.py
+#to use it tip in 
+#python
+#import explainable_ai
+#explainable_ai.getocclusion(window=40, stride=16, picuture_index=0)
+# you need to close the window to get the next image
+#when finnished use exit() to close the console
+
 
 #man ruft getocclusion auf und übergibt die parameter die man haben möchte
 #window = wie groß das patch sein soll hier immer Quadratisch
@@ -65,7 +74,7 @@ def getocclusion( window, stride, picuture_index):
     true_labels.append(true_class)
     predicted_labels.append(predicted_class)
 
-    picture = heatmaps[0]
+    picture = heatmap
     plt.figure(figsize=(5, 5))
     plt.imshow(picture)
     plt.colorbar()
@@ -73,4 +82,8 @@ def getocclusion( window, stride, picuture_index):
     plt.show()
 
     return 
+
+
+
+
 
