@@ -1,15 +1,16 @@
 import random
 from os import error
 
+import matplotlib.pyplot as plt
+import sklearn
 from PIL import Image
 import torch
 from torch.utils.data import DataLoader
 from torchvision.transforms import GaussianBlur
+from torchvision import datasets,transforms
 import numpy as np
 from sklearn.utils import shuffle
 from tqdm import tqdm
-
-from torchvision import transforms
 
 def im_labels_pair_getter(folder="21ClassDataset/",label_file="labels_21ClassDataset.csv"):
     labels=open(folder+label_file)
@@ -36,7 +37,7 @@ def single_im_preprocessing(image:Image.Image,imsize=224)->torch.Tensor: # chang
     image = gaus.forward(image)
     image = image.resize((imsize,imsize))
     imarray = np.array(image)
-    imtensor = torch.tensor(imarray)
+    imtensor=torch.tensor(imarray)
     imtensor = imtensor.permute(2,0,1) #[H,W,C]->[C,H,W]
     return imtensor/255
 
@@ -61,18 +62,32 @@ def image_hide_and_seek(image:torch.Tensor,patches_side:int,patches_length:int)-
                 image[:,hdim:hdim+patches_length,wdim:wdim+patches_length] = 0
     return image
 class PreprocessedPairStorage():
-    def __init__(self,imsize:int,):
-        temppairs = im_labels_pair_getter()
-        imspercent = len(temppairs) / 100
-        data = list_im_preprocessing([(x[0]) for x in temppairs], imsize)
-        labels = [int(x[1].replace('-1', '20')) for x in temppairs]
 
-        self.data:list[torch.Tensor] = shuffle(data, random_state=0)
-        self.labels:list[int] = shuffle(labels, random_state=0)
-        self.split:int = round(imspercent * 80)
-        self.augmented:bool=False
 
-    def augment(self,factor:int,val_destructive:bool=True,patches:int=16):
+    def __init__(self,imsize:int,data=None,labels=None,augmented:bool=False):
+        if data is None and labels is None:
+            temppairs = im_labels_pair_getter()
+            imspercent = len(temppairs) / 100
+            data = list_im_preprocessing([(x[0]) for x in temppairs], imsize)
+
+            labels = [int(x[1].replace('-1', '20')) for x in temppairs]
+
+
+            self.data:list[torch.Tensor] = shuffle(data, random_state=0)
+            self.labels:list[int] = shuffle(labels, random_state=0)
+            self.split:int = round(imspercent * 80)
+            self.augmented:bool=False
+
+        elif not(data is None or labels is None):
+            self.data = data
+            self.labels = labels
+            self.split=round((len(data)/100)*80)
+            self.augmented=augmented
+        else:
+            raise error("illegal init of PreprocessedPairStorage")
+
+
+    def augment(self,factor:int,val_destructive:bool=True,patches:int=16,copy:bool=False):
         """augments the data through the hide-and-seek algorithm
         (dividing the image into 16 patches and blacking out each one with a 50% chance)
         this is done factor times per image to expand the data factor times.
@@ -86,7 +101,7 @@ class PreprocessedPairStorage():
              otherwise the function automatically round down to the nearest int that fulfills these conditions(default: ``16``)
         """
         if factor<1 or self.augmented:
-            return
+            return self
         else:
             patch_side:int= int(patches**0.5)
             patch_side_length:int = int(self.data[1].size()[1]/patch_side)
@@ -108,27 +123,37 @@ class PreprocessedPairStorage():
                     new_data[index] = image_hide_and_seek(self.data[old_index],patch_side,patch_side_length)
                     new_labels[index] = self.labels[old_index]
                 self.split=self.split*factor
-            self.data = new_data
-            self.labels = new_labels
-            self.augmented = True
-
+            if copy:
+                return PreprocessedPairStorage(self.data[1].size()[1],new_data,new_labels,True)
+            else:
+                self.data = new_data
+                self.labels = new_labels
+                self.augmented = True
+                return self
 
 
 class Imageset(torch.utils.data.Dataset):
 
     def __init__(self,train:bool,storage:PreprocessedPairStorage):
-
+        self.train=train
         if train:
             self.data = storage.data[:storage.split]
+            random.choice((1,2,3))
+            self.flip=transforms.RandomHorizontalFlip(0.5)
+            self.randflip =False
             self.labels = storage.labels[:storage.split]
+            flip = transforms.RandomHorizontalFlip(1)
+            self.data =shuffle(self.data + [flip(h) for h in tqdm(self.data, desc="flipping")],random_state=1)
+            self.labels = shuffle(self.labels + self.labels,random_state=1)
+            print("ims=", len(self.data))
         else:
             self.data = storage.data[storage.split:]
             self.labels = storage.labels[storage.split:]
-            #self.cat_dog_label =
-
     def __getitem__(self, item):
-        return self.data[item],torch.tensor(self.labels[item])
-
+        if self.train and self.randflip:
+            return self.flip(self.data[item]),torch.tensor(self.labels[item])
+        else:
+            return self.data[item], torch.tensor(self.labels[item])
     def __len__(self):
         return len(self.data)
 
@@ -145,7 +170,8 @@ class ImagesetFull(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.data)
 
-def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0):
+
+def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0,train_batch_size=8):
     """creates and return one dataloader for training and one dataloader for validation
     Args:
         shuffled(bool): if true the dataloaders get shuffled, a.k.a. the order of the images with their labels gets randomized (default:``False``)
@@ -158,9 +184,13 @@ def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_fact
 
     valid_set = DataLoader(Imageset(train=False,storage=data_storage), batch_size=1, shuffle=shuffled)
     data_storage.augment(augment_factor)
-    train_set = DataLoader(Imageset(train=True,storage=data_storage), batch_size=32, shuffle=shuffled)
+    train_set = DataLoader(Imageset(train=True,storage=data_storage), batch_size=train_batch_size, shuffle=shuffled)
     return train_set,valid_set
-def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0):
+
+def get_augmented_dataloader_from_augmented_storage(shuffle:bool, augmented_storage:PreprocessedPairStorage,batch_size=8):
+    return DataLoader(ImagesetFull(storage=augmented_storage), batch_size=8, shuffle=shuffle)
+
+def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0,batch_size=8):
     """creates and return one dataloader for training and one dataloader for validation
         Args:
             shuffled(bool): if true the dataloader gets shuffled, a.k.a. the order of the images with their labels gets randomized (default:``False``)
@@ -171,5 +201,11 @@ def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_f
             a training(first 80%[possibly increased trough augment_factor]) and a validation(last 20%) dataloader of the training images"""
     data_storage = PreprocessedPairStorage(image_side_length)
     data_storage.augment(augment_factor,val_destructive=False)
-    loader= DataLoader(ImagesetFull(storage=data_storage), batch_size=32,shuffle=shuffled)
+    loader= DataLoader(ImagesetFull(storage=data_storage), batch_size=batch_size,shuffle=shuffled)
     return loader
+#x,y =get_dataloaders()
+#a=next(iter(y))[0]
+#b=torch.squeeze(a)
+#c=b.permute(1,2,0)
+#plt.imshow(c)
+#plt.show()

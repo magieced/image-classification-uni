@@ -1,3 +1,4 @@
+import random
 import torch
 import torchvision.models as models
 import preprocessing
@@ -44,7 +45,7 @@ class Net(nn.Module):
         x = self.classifier(x)
         return x
 
-def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_dataloader=True, augment_factor=0):
+def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_dataloader=True, augment_factor=0, reaugment_every_epoch=False, batch_size = 8):
     """Trains the specified model
     Args:
         use_gpu: whether the GPU should be used to train the model. Requires CUDA
@@ -52,8 +53,14 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         model_number: enum of the model architecture. 0 is efficientnet_b0, 1 is efficientnet_b1, 2 is simple CNN
         create_validation_dataloader: toggles whether this outputs a part of the training set as a validation dataloader. This part doesn't get trained on
         augment_factor: the increase in dataset size
+        reagument_every_epoch: toggles whether the data is augmented from scratch every epoch to reduce overfitting
+        batch_size: batch size of the training dataloader
     Returns:
             the model, a validation set that wasn't trained on"""
+
+    torch.manual_seed(0)
+    random.seed(0)
+
     if model_number == 0:
         model = models.efficientnet_b0(weights=None)
         model.classifier[1] = torch.nn.Linear(
@@ -85,11 +92,6 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
     else:
         model = Net()
         image_size = 128
-
-    if create_validation_dataloader:
-        train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=True, image_side_length=image_size, augment_factor=augment_factor)
-    else:
-        train_loader = preprocessing.get_one_dataloader(shuffled=True, image_side_length=image_size, augment_factor=augment_factor)
     
     optimizer = torch.optim.AdamW(
         model.parameters(),
@@ -109,12 +111,35 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         device = torch.device("cuda" if use_gpu else "cpu")
         model.to(device)
         criterion.cuda()
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(0)
+            torch.cuda.manual_seed_all(0)  # for multi-GPU setups
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
 
     model.train()
+
+    if create_validation_dataloader:
+        train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=False, image_side_length=image_size, augment_factor=augment_factor, train_batch_size=batch_size)
+    else:
+        train_loader = preprocessing.get_one_dataloader(shuffled=False, image_side_length=image_size, augment_factor=augment_factor, batch_size=batch_size)
+
 
     losses = []
     for epoch in tqdm(range(epochs), desc='Epoch'):
         epoch_loss = 0.0
+
+        """
+        if reaugment_every_epoch and (epoch == 0 or augment_factor >= 1) :
+            if create_validation_dataloader:
+                train_loader = torch.utils.data.DataLoader(preprocessing.Imageset(train=True,
+                    storage=data_storage.augment(factor=augment_factor, copy=True, val_destructive=True)
+                    ), batch_size=batch_size, shuffle=True)
+            else:
+                train_loader = torch.utils.data.DataLoader(preprocessing.ImagesetFull(
+                    storage=data_storage.augment(factor=augment_factor, copy=True, val_destructive=True)
+                    ), batch_size=batch_size, shuffle=True)
+        """
 
         for step, (example, label) in enumerate(tqdm(train_loader, desc='Batch')):
             if use_gpu:
@@ -137,12 +162,12 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         print(epoch, epoch_loss / len(train_loader))
 
         # Stop if relative improvement is too small
-        if len(losses) > 1:
+        if len(losses) > 1 and (not reaugment_every_epoch):
             relative_change = abs(losses[-2] - losses[-1]) / losses[-2]
 
             if relative_change < 1e-3:
                 epochs = epoch
-                print(f"Stopping early at epoch {epoch}")
+                print("Stopping early at epoch " + str(epoch))
                 break
 
     torch.save(model.state_dict(), str(model_number) + "_" + str(epochs) + "_" + str(augment_factor) + "_weights")
@@ -177,8 +202,9 @@ def evaluate_model(model, validation_loader):
     print("Accuracy:", accuracy)
     return accuracy
 
-"""
-To load a model, do the following:
-    models.efficientnet_b0(weights = "[Model weights name]")
-Replace the name of the model with whichever one you need (don't forget to import torchvision.models as models)
-"""
+def load_model():
+    model = models.efficientnet_b1(weights=None)
+    model.classifier[1] = torch.nn.Linear(1280, 21)
+    model.load_state_dict(torch.load("1_20_0_weights", weights_only=True, map_location=torch.device('cpu')))
+    model.eval()
+    return model
