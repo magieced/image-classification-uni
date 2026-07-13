@@ -5,6 +5,7 @@ import numpy as np
 import preprocessing 
 import model_creator
 import torchvision.models as models
+import model.py
 
 
 data = preprocessing.get_one_dataloader(shuffled=False, image_side_length=224, augment_factor=0)
@@ -18,13 +19,13 @@ predicted_labels = []
 #stride = schritteweite
 
 
-def getocclusion(model_number, weigth_number, window, stride, picuture_index):
+def getocclusion( window, stride, picuture_index):
     global heatmaps, true_labels, predicted_labels
     heatmaps = []
     true_labels = []
     predicted_labels = []
    
-    model = model_creator.load_model(model_number, weigth_number)
+    model = model_creator.load_model()
     occlusion = Occlusion(model)
 
     sliding_window_shapes1 = (3, window, window)
