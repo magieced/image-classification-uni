@@ -1,3 +1,4 @@
+import random
 import torch
 import torchvision.models as models
 import preprocessing
@@ -58,6 +59,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
             the model, a validation set that wasn't trained on"""
 
     torch.manual_seed(0)
+    random.seed(0)
 
     if model_number == 0:
         model = models.efficientnet_b0(weights=None)
@@ -112,6 +114,8 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         if torch.cuda.is_available():
             torch.cuda.manual_seed(0)
             torch.cuda.manual_seed_all(0)  # for multi-GPU setups
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
 
     model.train()
 
@@ -121,9 +125,9 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
             validation_loader = torch.utils.data.DataLoader(preprocessing.Imageset(train=False,storage=data_storage), batch_size=batch_size, shuffle=False)
     else:
         if create_validation_dataloader:
-            train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=True, image_side_length=image_size, augment_factor=augment_factor, train_batch_size=batch_size)
+            train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=False, image_side_length=image_size, augment_factor=augment_factor, train_batch_size=batch_size)
         else:
-            train_loader = preprocessing.get_one_dataloader(shuffled=True, image_side_length=image_size, augment_factor=augment_factor, batch_size=batch_size)
+            train_loader = preprocessing.get_one_dataloader(shuffled=False, image_side_length=image_size, augment_factor=augment_factor, batch_size=batch_size)
 
 
     losses = []
