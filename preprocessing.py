@@ -2,6 +2,7 @@ import random
 from os import error
 
 import matplotlib.pyplot as plt
+import sklearn
 from PIL import Image
 import torch
 from torch.utils.data import DataLoader
@@ -68,12 +69,15 @@ class PreprocessedPairStorage():
             temppairs = im_labels_pair_getter()
             imspercent = len(temppairs) / 100
             data = list_im_preprocessing([(x[0]) for x in temppairs], imsize)
+
             labels = [int(x[1].replace('-1', '20')) for x in temppairs]
+
 
             self.data:list[torch.Tensor] = shuffle(data, random_state=0)
             self.labels:list[int] = shuffle(labels, random_state=0)
             self.split:int = round(imspercent * 80)
             self.augmented:bool=False
+
         elif not(data is None or labels is None):
             self.data = data
             self.labels = labels
@@ -136,13 +140,17 @@ class Imageset(torch.utils.data.Dataset):
             self.data = storage.data[:storage.split]
             random.choice((1,2,3))
             self.flip=transforms.RandomHorizontalFlip(0.5)
-
+            self.randflip =False
             self.labels = storage.labels[:storage.split]
+            flip = transforms.RandomHorizontalFlip(1)
+            self.data =shuffle(self.data + [flip(h) for h in tqdm(self.data, desc="flipping")],random_state=1)
+            self.labels = shuffle(self.labels + self.labels,random_state=1)
+            print("ims=", len(self.data))
         else:
             self.data = storage.data[storage.split:]
             self.labels = storage.labels[storage.split:]
     def __getitem__(self, item):
-        if self.train:
+        if self.train and self.randflip:
             return self.flip(self.data[item]),torch.tensor(self.labels[item])
         else:
             return self.data[item], torch.tensor(self.labels[item])
