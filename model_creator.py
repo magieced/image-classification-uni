@@ -195,8 +195,9 @@ def evaluate_model(model, validation_loader):
     print("Accuracy:", accuracy)
     return accuracy
 
-"""
-To load a model, do the following:
-    models.efficientnet_b0(weights = "[Model weights name]")
-Replace the name of the model with whichever one you need (don't forget to import torchvision.models as models)
-"""
+def load_model():
+    model = models.efficientnet_b1(weights=None)
+    model.classifier[1] = torch.nn.Linear(1280, 21)
+    model.load_state_dict(torch.load("1_20_0_weights", weights_only=True, map_location=torch.device('cpu')))
+    model.eval()
+    return model
