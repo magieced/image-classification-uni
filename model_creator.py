@@ -56,6 +56,9 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         batch_size: batch size of the training dataloader
     Returns:
             the model, a validation set that wasn't trained on"""
+
+    torch.manual_seed(0)
+
     if model_number == 0:
         model = models.efficientnet_b0(weights=None)
         model.classifier[1] = torch.nn.Linear(
@@ -106,6 +109,9 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         device = torch.device("cuda" if use_gpu else "cpu")
         model.to(device)
         criterion.cuda()
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(0)
+            torch.cuda.manual_seed_all(0)  # for multi-GPU setups
 
     model.train()
 
