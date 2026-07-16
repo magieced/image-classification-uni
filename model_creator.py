@@ -211,5 +211,3 @@ def load_model():
     model.load_state_dict(torch.load("1_20_0_weights", weights_only=True, map_location=torch.device('cpu')))
     model.eval()
     return model
-
-train_model(epochs = 2)
