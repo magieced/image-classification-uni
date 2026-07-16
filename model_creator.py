@@ -45,7 +45,7 @@ class Net(nn.Module):
         x = self.classifier(x)
         return x
 
-def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_dataloader=True, augment_factor=0, reaugment_every_epoch=False, batch_size = 8):
+def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_dataloader=True, augment_factor=0, reaugment_every_epoch=False, batch_size = 8, isRandom = False):
     """Trains the specified model
     Args:
         use_gpu: whether the GPU should be used to train the model. Requires CUDA
@@ -58,8 +58,9 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
     Returns:
             the model, a validation set that wasn't trained on"""
 
-    torch.manual_seed(0)
-    random.seed(0)
+    if not isRandom:
+        torch.manual_seed(0)
+        random.seed(0)
 
     if model_number == 0:
         model = models.efficientnet_b0(weights=None)
@@ -111,7 +112,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         device = torch.device("cuda" if use_gpu else "cpu")
         model.to(device)
         criterion.cuda()
-        if torch.cuda.is_available():
+        if torch.cuda.is_available() and (not isRandom):
             torch.cuda.manual_seed(0)
             torch.cuda.manual_seed_all(0)  # for multi-GPU setups
             torch.backends.cudnn.deterministic = True
@@ -126,6 +127,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
 
 
     losses = []
+    validation_accuracy = []
     for epoch in tqdm(range(epochs), desc='Epoch'):
         epoch_loss = 0.0
 
@@ -160,12 +162,13 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         epoch_loss /= len(train_loader)
         losses.append(epoch_loss)
         print(epoch, epoch_loss / len(train_loader))
+        validation_accuracy.append(evaluate_model(model, validation_loader))
 
         # Stop if relative improvement is too small
         if len(losses) > 1 and (not reaugment_every_epoch):
-            relative_change = abs(losses[-2] - losses[-1]) / losses[-2]
+            relative_change = abs(validation_accuracy[-2] - validation_accuracy[-1]) / validation_accuracy[-2]
 
-            if relative_change < 1e-3:
+            if relative_change > 1e-3:
                 epochs = epoch
                 print("Stopping early at epoch " + str(epoch))
                 break
@@ -208,3 +211,5 @@ def load_model():
     model.load_state_dict(torch.load("1_20_0_weights", weights_only=True, map_location=torch.device('cpu')))
     model.eval()
     return model
+
+train_model(epochs = 2)
