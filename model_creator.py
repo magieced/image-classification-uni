@@ -96,7 +96,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
     
     optimizer = torch.optim.AdamW(
         model.parameters(),
-        lr=1.e-4
+        lr=1.e-3
     )
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -168,7 +168,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         if len(losses) > 1 and (not reaugment_every_epoch):
             relative_change = abs(validation_accuracy[-2] - validation_accuracy[-1]) / validation_accuracy[-2]
 
-            if relative_change > 1e-3:
+            if relative_change < 1e-3:
                 epochs = epoch
                 print("Stopping early at epoch " + str(epoch))
                 break
