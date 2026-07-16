@@ -128,6 +128,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
 
     losses = []
     validation_accuracy = []
+    max_epoch_accuracy = 0
     for epoch in tqdm(range(epochs), desc='Epoch'):
         epoch_loss = 0.0
 
@@ -162,6 +163,11 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         epoch_loss /= len(train_loader)
         losses.append(epoch_loss)
         print(epoch, epoch_loss / len(train_loader))
+        epoch_accuracy = evaluate_model(model, validation_loader)
+        if epoch_accuracy > max_epoch_accuracy:
+            torch.save(model.state_dict(), str(model_number) + "_" + str(epochs) + "_" + str(augment_factor) + "_best_temp_weights")
+            max_epoch_accuracy = epoch_accuracy
+        
         validation_accuracy.append(evaluate_model(model, validation_loader))
 
         # Stop if relative improvement is too small
