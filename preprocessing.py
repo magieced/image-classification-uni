@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 import sklearn
 from PIL import Image
 import torch
+import albumentations.augmentations.pixel.transforms as albu
+from albumentations import ToTensorV2
+from gmpy2 import random_state
 from torch.utils.data import DataLoader
 from torchvision.transforms import GaussianBlur
 from torchvision import datasets,transforms
@@ -143,8 +146,13 @@ class Imageset(torch.utils.data.Dataset):
             self.randflip =False
             self.labels = storage.labels[:storage.split]
             flip = transforms.RandomHorizontalFlip(1)
-            self.data =shuffle(self.data + [flip(h) for h in tqdm(self.data, desc="flipping")],random_state=1)
-            self.labels = shuffle(self.labels + self.labels,random_state=1)
+            self.data =self.data + [flip(h) for h in tqdm(self.data, desc="flipping")]
+            self.labels = self.labels + self.labels
+            contrastbright= albu.PlasmaBrightnessContrast(p=1,roughness=2)
+            self.data = self. data + [torch.permute(torch.tensor(contrastbright(image=b.permute(1,2,0).numpy())['image']),(2,0,1)) for b  in tqdm(self.data,desc="brightness/contrast augmentation")]
+            self.labels = self.labels + self. labels
+            self.data=shuffle(self.data,random_state=1)
+            self.labels=shuffle(self.labels,random_state=1)
             print("ims=", len(self.data))
         else:
             self.data = storage.data[storage.split:]
