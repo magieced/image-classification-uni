@@ -203,14 +203,14 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
 
         # Stop if relative improvement is too small
         if len(losses) > 1 and (not reaugment_every_epoch):
-            relative_change = abs(validation_accuracy[-2] - validation_accuracy[-1]) / validation_accuracy[-2]
+            relative_change = abs(validation_accuracy[-1]) - abs(validation_accuracy[-2])
 
-            if relative_change < 1e-3:
+            if relative_change < 0:
                 epochs = epoch
                 print("Stopping early at epoch " + str(epoch))
                 break
 
-    torch.save(model.state_dict(), "Model" + str(model_number) + "_Epochs" + str(epochs) + "_Pretraind" + str(pretrained) + "_weights")
+    torch.save(model.state_dict(), "Model" + str(model_number) + "_Epochs" + str(epochs) + "_Pretrained" + str(pretrained) + "_weights")
     if create_validation_dataloader:
         return model, validation_loader
     else:
