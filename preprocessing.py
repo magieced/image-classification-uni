@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 import sklearn
 from PIL import Image
 import torch
-import albumentations.augmentations.pixel.transforms as albu
-from albumentations import ToTensorV2
+import albumentations as albu
 from gmpy2 import random_state
 from torch.utils.data import DataLoader
 from torchvision.transforms import GaussianBlur
@@ -137,29 +136,30 @@ class PreprocessedPairStorage():
 
 class Imageset(torch.utils.data.Dataset):
 
-    def __init__(self,train:bool,storage:PreprocessedPairStorage):
+    def __init__(self,train:bool,storage:PreprocessedPairStorage,augment:bool=True):
         self.train=train
         if train:
             self.data = storage.data[:storage.split]
-            random.choice((1,2,3))
-            self.flip=transforms.RandomHorizontalFlip(0.5)
-            self.randflip =False
             self.labels = storage.labels[:storage.split]
-            flip = transforms.RandomHorizontalFlip(1)
-            self.data =self.data + [flip(h) for h in tqdm(self.data, desc="flipping")]
-            self.labels = self.labels + self.labels
-            contrastbright= albu.PlasmaBrightnessContrast(p=1,roughness=2)
-            self.data = self. data + [torch.permute(torch.tensor(contrastbright(image=b.permute(1,2,0).numpy())['image']),(2,0,1)) for b  in tqdm(self.data,desc="brightness/contrast augmentation")]
-            self.labels = self.labels + self. labels
-            self.data=shuffle(self.data,random_state=1)
-            self.labels=shuffle(self.labels,random_state=1)
+            if augment:
+                flip = transforms.RandomHorizontalFlip(1)
+                self.data =self.data + [flip(h) for h in tqdm(self.data, desc="flipping")]
+                self.labels = self.labels + self.labels
+                contrastbright= albu.PlasmaBrightnessContrast(p=1,roughness=2)
+                rot = albu.SafeRotate(limit=(-10,10),p=1)
+                self.data = self. data + [torch.permute(torch.tensor(contrastbright(image=b.permute(1,2,0).numpy())['image']),(2,0,1)) for b  in tqdm(self.data,desc="brightness/contrast augmentation")]
+                self.labels = self.labels + self. labels
+                self.data = self.data + [torch.permute(torch.tensor(rot(image=b.permute(1, 2, 0).numpy())['image']), (2, 0, 1)) for b in tqdm(self.data, desc="small(up to 10°) rotation augmentation")]
+                self.labels = self.labels + self.labels
+                self.data=shuffle(self.data,random_state=1)
+                self.labels=shuffle(self.labels,random_state=1)
             print("ims=", len(self.data))
         else:
             self.data = storage.data[storage.split:]
             self.labels = storage.labels[storage.split:]
     def __getitem__(self, item):
-        if self.train and self.randflip:
-            return self.flip(self.data[item]),torch.tensor(self.labels[item])
+        if self.train:
+            return self.data[item],torch.tensor(self.labels[item])
         else:
             return self.data[item], torch.tensor(self.labels[item])
     def __len__(self):
@@ -179,7 +179,7 @@ class ImagesetFull(torch.utils.data.Dataset):
         return len(self.data)
 
 
-def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0,train_batch_size=8):
+def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0,train_batch_size=8,augment=True):
     """creates and return one dataloader for training and one dataloader for validation
     Args:
         shuffled(bool): if true the dataloaders get shuffled, a.k.a. the order of the images with their labels gets randomized (default:``False``)
@@ -192,7 +192,7 @@ def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_fact
 
     valid_set = DataLoader(Imageset(train=False,storage=data_storage), batch_size=1, shuffle=shuffled)
     data_storage.augment(augment_factor)
-    train_set = DataLoader(Imageset(train=True,storage=data_storage), batch_size=train_batch_size, shuffle=shuffled)
+    train_set = DataLoader(Imageset(train=True,storage=data_storage,augment=augment), batch_size=train_batch_size, shuffle=shuffled)
     return train_set,valid_set
 
 def get_augmented_dataloader_from_augmented_storage(shuffle:bool, augmented_storage:PreprocessedPairStorage,batch_size=8):
