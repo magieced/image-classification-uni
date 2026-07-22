@@ -45,14 +45,14 @@ class Net(nn.Module):
         x = self.classifier(x)
         return x
 
-def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_dataloader=True, augment_factor=0, reaugment_every_epoch=False, batch_size = 8, isRandom = False, pretrained = False):
+def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_dataloader=True, augment=True, reaugment_every_epoch=False, batch_size = 8, isRandom = False, pretrained = False):
     """Trains the specified model
     Args:
         use_gpu: whether the GPU should be used to train the model. Requires CUDA
         epochs: the number of epochs used to train the model
         model_number: enum of the model architecture. 0 is efficientnet_b0, 1 is efficientnet_b1, 2 is simple CNN
         create_validation_dataloader: toggles whether this outputs a part of the training set as a validation dataloader. This part doesn't get trained on
-        augment_factor: the increase in dataset size
+        augment: toggles whether the imageset is augmented
         reagument_every_epoch: toggles whether the data is augmented from scratch every epoch to reduce overfitting
         batch_size: batch size of the training dataloader
         isRandom: if False, sets a seed for torch and random
@@ -142,9 +142,9 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
     model.train()
 
     if create_validation_dataloader:
-        train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=False, image_side_length=image_size, augment_factor=augment_factor, train_batch_size=batch_size)
+        train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=False, image_side_length=image_size, train_batch_size=batch_size, augment=augment)
     else:
-        train_loader = preprocessing.get_one_dataloader(shuffled=False, image_side_length=image_size, augment_factor=augment_factor, batch_size=batch_size)
+        train_loader = preprocessing.get_one_dataloader(shuffled=False, image_side_length=image_size, batch_size=batch_size)
 
 
     losses = []
@@ -196,7 +196,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         print(epoch, epoch_loss / len(train_loader))
         epoch_accuracy = evaluate_model(model, validation_loader)
         if epoch_accuracy > max_epoch_accuracy:
-            torch.save(model.state_dict(), str(model_number) + "_" + str(epochs) + "_" + str(augment_factor) + "_best_temp_weights")
+            torch.save(model.state_dict(), "Model number:" + str(model_number) + "_Epochs:" + str(epochs) + "_Pretrained:" + str(pretrained) + "_best_temp_weights")
             max_epoch_accuracy = epoch_accuracy
         
         validation_accuracy.append(evaluate_model(model, validation_loader))
@@ -210,7 +210,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
                 print("Stopping early at epoch " + str(epoch))
                 break
 
-    torch.save(model.state_dict(), str(model_number) + "_" + str(epochs) + "_" + str(augment_factor) + "_weights")
+    torch.save(model.state_dict(), "Model number:" + str(model_number) + "_Epochs:" + str(epochs) + "_Pretrained:" + str(pretrained) + "_weights")
     if create_validation_dataloader:
         return model, validation_loader
     else:
