@@ -196,7 +196,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         print(epoch, epoch_loss / len(train_loader))
         epoch_accuracy = evaluate_model(model, validation_loader)
         if epoch_accuracy > max_epoch_accuracy:
-            torch.save(model.state_dict(), "Model number:" + str(model_number) + "_Epochs:" + str(epochs) + "_Pretrained:" + str(pretrained) + "_best_temp_weights")
+            torch.save(model.state_dict(), "Model" + str(model_number) + "_Epochs" + str(epochs) + "_Pretraind" + str(pretrained) + "_best_temp_weights")
             max_epoch_accuracy = epoch_accuracy
         
         validation_accuracy.append(evaluate_model(model, validation_loader))
@@ -210,7 +210,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
                 print("Stopping early at epoch " + str(epoch))
                 break
 
-    torch.save(model.state_dict(), "Model number:" + str(model_number) + "_Epochs:" + str(epochs) + "_Pretrained:" + str(pretrained) + "_weights")
+    torch.save(model.state_dict(), "Model" + str(model_number) + "_Epochs" + str(epochs) + "_Pretraind" + str(pretrained) + "_weights")
     if create_validation_dataloader:
         return model, validation_loader
     else:
