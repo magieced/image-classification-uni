@@ -43,9 +43,9 @@ def train_test_models():
     #file.close()
 
     file = open("accuracy_list.txt", 'a')
-    model5, validation5 = model_creator.train_model(use_gpu=True, epochs=20, model_number=4, create_validation_dataloader=True, augment_factor=0, batch_size=32)
+    model5, validation5 = model_creator.train_model(use_gpu=True, epochs=20, model_number=0, create_validation_dataloader=True, augment=False, batch_size=16, pretrained=True)
     accuracy5 = model_creator.evaluate_model(model5, validation5)
-    file.write("Simple CNN accuracy with 0 augmentation_factor: " + str(accuracy5) + "\n")
+    file.write("EfficientNet_B0 with default/pretrained weights " + str(accuracy5) + "\n")
     del(model5)
     del(validation5)
     file.close()
