@@ -45,7 +45,7 @@ class Net(nn.Module):
         x = self.classifier(x)
         return x
 
-def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_dataloader=True, augment_factor=0, reaugment_every_epoch=False, batch_size = 8, isRandom = False):
+def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_dataloader=True, augment_factor=0, reaugment_every_epoch=False, batch_size = 8, isRandom = False, pretrained = False):
     """Trains the specified model
     Args:
         use_gpu: whether the GPU should be used to train the model. Requires CUDA
@@ -55,6 +55,8 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         augment_factor: the increase in dataset size
         reagument_every_epoch: toggles whether the data is augmented from scratch every epoch to reduce overfitting
         batch_size: batch size of the training dataloader
+        isRandom: if False, sets a seed for torch and random
+        pretrained: if True, uses default weights for EfficientNet
     Returns:
             the model, a validation set that wasn't trained on"""
 
@@ -62,42 +64,61 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         torch.manual_seed(0)
         random.seed(0)
 
+    weights = None
     if model_number == 0:
-        model = models.efficientnet_b0(weights=None)
+        if pretrained:
+            weights = models.EfficientNet_B0_Weights.DEFAULT
+        model = models.efficientnet_b0(weights=weights)
         model.classifier[1] = torch.nn.Linear(
             model.classifier[1].in_features,
             21 # Number of classes. Hardcoded as we don't need to change it ~Erik
         )
         image_size = 224
     elif model_number == 1:
-        model = models.efficientnet_b1(weights=None)
+        if pretrained:
+            weights = models.EfficientNet_B1_Weights.DEFAULT
+        model = models.efficientnet_b1(weights=weights)
         model.classifier[1] = torch.nn.Linear(
             model.classifier[1].in_features,
-            21 # Number of classes. Hardcoded as we don't need to change it
+            21
         )
         image_size = 224
     elif model_number == 2:
-        model = models.efficientnet_b2(weights=None)
+        if pretrained:
+            weights = models.EfficientNet_B2_Weights.DEFAULT
+        model = models.efficientnet_b2(weights=weights)
         model.classifier[1] = torch.nn.Linear(
             model.classifier[1].in_features,
-            21 # Number of classes. Hardcoded as we don't need to change it
+            21 
         )
         image_size = 224
     elif model_number == 3:
-        model = models.efficientnet_b3(weights=None)
+        if pretrained:
+            weights = models.EfficientNet_B3_Weights.DEFAULT
+        model = models.efficientnet_b3(weights=weights)
         model.classifier[1] = torch.nn.Linear(
             model.classifier[1].in_features,
-            21 # Number of classes. Hardcoded as we don't need to change it
+            21
         )
         image_size = 224
     else:
         model = Net()
         image_size = 128
-    
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=1.e-3
-    )
+
+    # At first, do a rough training of the new classifiers
+    if pretrained:
+        for param in model.features.parameters():
+            param.requires_grad = False
+
+        optimizer = torch.optim.Adam(
+            filter(lambda p: p.requires_grad, model.parameters()),
+            lr=1e-3
+        )
+    else:
+        optimizer = torch.optim.AdamW(
+            model.parameters(),
+            lr=1.e-4
+        )
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
@@ -131,6 +152,16 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
     max_epoch_accuracy = 0
     for epoch in tqdm(range(epochs), desc='Epoch'):
         epoch_loss = 0.0
+
+        # Then fine tune the model
+        if epoch == 5 and pretrained:
+            for param in model.parameters():
+                param.requires_grad = True
+            
+            optimizer = torch.optim.AdamW(
+                model.parameters(),
+                lr=1.e-5
+            )
 
         """
         if reaugment_every_epoch and (epoch == 0 or augment_factor >= 1) :
