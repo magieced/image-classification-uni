@@ -128,11 +128,12 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
 
     criterion = torch.nn.CrossEntropyLoss(label_smoothing=0.1)
 
+    use_gpu = use_gpu and torch.cuda.is_available()
     if use_gpu:
         device = torch.device("cuda" if use_gpu else "cpu")
         model.to(device)
         criterion.cuda()
-        if torch.cuda.is_available() and (not isRandom):
+        if use_gpu and (not isRandom):
             torch.cuda.manual_seed(0)
             torch.cuda.manual_seed_all(0)  # for multi-GPU setups
             torch.backends.cudnn.deterministic = True
@@ -188,7 +189,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         validation_accuracy.append(evaluate_model(model, validation_loader))
 
         # Stop if relative improvement is too small
-        if len(losses) > 1 and (epoch > 10 or (not pretrained)):
+        if len(losses) > 1 and (epoch > 5 or (not pretrained)):
             relative_change = abs(validation_accuracy[-1]) - abs(validation_accuracy[-2])
 
             if relative_change < 0:
@@ -229,8 +230,8 @@ def evaluate_model(model, validation_loader):
     return accuracy
 
 def load_model():
-    model = models.efficientnet_b0(weights=None)
+    model = models.efficientnet_b1(weights=None)
     model.classifier[1] = torch.nn.Linear(1280, 21)
-    model.load_state_dict(torch.load("bestpretrain", weights_only=True, map_location=torch.device('cpu')))
+    model.load_state_dict(torch.load("bestyolob1pretrain", weights_only=True, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
     model.eval()
     return model
