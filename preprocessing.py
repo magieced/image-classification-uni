@@ -38,8 +38,8 @@ def single_im_preprocessing(image:Image.Image,imsize=224,yolocropper=None)->torc
     image = gaus.forward(image)
     imarray = np.array(image)
     if yolocropper== None:
-        yolocropper = YOLO("yolo26n.pt")
-    results = yolocropper(imarray)
+        yolocropper = YOLO("yolo26n.pt",verbose=False)
+    results = yolocropper(imarray,verbose=False)
     if len(results[0].boxes) > 0:
         cropped=imarray
         maxsize=0
@@ -69,7 +69,7 @@ def list_im_preprocessing(images:list[Image.Image],imsize=128)->list[torch.Tenso
     Returns:
             the preprocessed Images, dtype=list[torch.Tensor]"""
     result:list[torch.Tensor] = [None] * len(images) #type: ignore[list-item]
-    cropper = YOLO("yolo26n.pt")
+    cropper = YOLO("yolo26n.pt", verbose=False)
     for i in tqdm(range(len(images)),desc="preprocessing for the dataset"):
         result[i]=single_im_preprocessing(images[i],imsize,yolocropper=cropper)
     return result
