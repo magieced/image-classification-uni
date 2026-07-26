@@ -188,7 +188,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         validation_accuracy.append(evaluate_model(model, validation_loader))
 
         # Stop if relative improvement is too small
-        if len(losses) > 1:
+        if len(losses) > 1 and (epoch > 10 or (not pretrained)):
             relative_change = abs(validation_accuracy[-1]) - abs(validation_accuracy[-2])
 
             if relative_change < 0:
