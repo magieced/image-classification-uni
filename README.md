@@ -1,7 +1,9 @@
 # image-classification-uni
 Group Project for University, classifying an image into one of 21 classes
 
-All that needs to be done to run the model is to run inference.py
+To set up the environment, create a new venv environment and use pip install requirements.txt, which contains all needed packages.
+
+To run the model, run inference.py. inference.py automatically loads the model and does all necessary preprocessing.
 This, to our knowledge, creates the best output.
 
 If manual setup of the model is necessary, it can be done in the following way:
@@ -18,4 +20,3 @@ As a result, you will have an int in range [-1, 19], corresponding to the classe
 Training was done on images gotten from the sources listed in 21ClassDataset\CSV_creator.py
 You can train a model by running model_creator.train_model(), with preprocessing being completed automatically in the train_model function.
 To get the accuracy of the model on a validation subset of the training set, run train_model with create_validation_dataloader=True and pass the two outputs into model_creator.evaluate_model in the same order as they were returned.
-All required packages are contained in requirements.txt and can be installed by using pip.install requirements.txt.

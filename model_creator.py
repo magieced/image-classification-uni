@@ -133,7 +133,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         device = torch.device("cuda" if use_gpu else "cpu")
         model.to(device)
         criterion.cuda()
-        if use_gpu and (not isRandom):
+        if (not isRandom):
             torch.cuda.manual_seed(0)
             torch.cuda.manual_seed_all(0)  # for multi-GPU setups
             torch.backends.cudnn.deterministic = True

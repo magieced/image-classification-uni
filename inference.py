@@ -68,7 +68,8 @@ class Model(nn.Module):
     """
     def __init__(self):
         super().__init__()
-        
+
+        """
         self.features = nn.Sequential(
             nn.Conv2d(3, 32, kernel_size=3, padding=1),
             nn.BatchNorm2d(32),
@@ -99,7 +100,7 @@ class Model(nn.Module):
             nn.Linear(256, 21)              # Hardcoded as we always have 21 classes
         )
 
-        self.load_state_dict(torch.load("bestcnn", weights_only=True, map_location=torch.device('cpu')))
+        self.load_state_dict(torch.load("bestcnn", weights_only=True, map_location=torch.device('cpu')))"""
 
         self.model = model_creator.load_model()
 
@@ -107,8 +108,10 @@ class Model(nn.Module):
         y = preprocessing.single_im_preprocessing(image, 224)
         y = y.unsqueeze(0)
 
-        #y = self.features(y)
-        #x = self.classifier(y)
+        """
+        y = self.features(y)
+        x = self.classifier(y)
+        """
 
         x = self.model(y)
         x = x.argmax(dim=1).item()
