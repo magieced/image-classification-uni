@@ -2,17 +2,16 @@ import random
 from os import error
 
 import matplotlib.pyplot as plt
-import sklearn
 from PIL import Image
 import torch
 import albumentations as albu
-from gmpy2 import random_state
 from torch.utils.data import DataLoader
 from torchvision.transforms import GaussianBlur
 from torchvision import datasets,transforms
 import numpy as np
 from sklearn.utils import shuffle
 from tqdm import tqdm
+from ultralytics import YOLO
 
 def im_labels_pair_getter(folder="21ClassDataset/",label_file="labels_21ClassDataset.csv"):
     labels=open(folder+label_file)
@@ -27,7 +26,7 @@ def im_labels_pair_getter(folder="21ClassDataset/",label_file="labels_21ClassDat
         pairs += [[im,parts[1]]]
     return pairs
 
-def single_im_preprocessing(image:Image.Image,imsize=224)->torch.Tensor: # changed size to 224 ~Erik
+def single_im_preprocessing(image:Image.Image,imsize=224,yolocropper=None)->torch.Tensor: # changed size to 224 ~Erik
     """takes a single PIL image and scales it to imsize*imsize pixels(default: 224x224) and  blurs it with a gaussian kernel
     Args:
         image(PIL.Image.Image): the PIL Image to be preprocessed
@@ -37,10 +36,27 @@ def single_im_preprocessing(image:Image.Image,imsize=224)->torch.Tensor: # chang
     image = image.convert("RGB")
     gaus = GaussianBlur(5, 1)
     image = gaus.forward(image)
-    image = image.resize((imsize,imsize))
     imarray = np.array(image)
-    imtensor=torch.tensor(imarray)
+    if yolocropper== None:
+        yolocropper = YOLO("yolo26n.pt")
+    results = yolocropper(imarray)
+    if len(results[0].boxes) > 0:
+        cropped=imarray
+        maxsize=0
+        for idx, box in enumerate(results[0].boxes.xyxy):
+            x1, y1, x2, y2 = map(int, box[:4])
+            xlen=x2-x1
+            ylen=y2-y1
+            size=xlen*ylen
+            if size>maxsize and (results[0].boxes[idx].cls[0]==15 or results[0].boxes[idx].cls[0]==16):
+                maxsize=size
+                cropped = imarray[y1:y2, x1:x2]
+    else:
+        cropped=imarray
+    imtensor=torch.tensor(cropped)
     imtensor = imtensor.permute(2,0,1) #[H,W,C]->[C,H,W]
+    resize= transforms.Resize((imsize,imsize))
+    imtensor = resize(imtensor)
     return imtensor/255
 
 def list_im_preprocessing(images:list[Image.Image],imsize=128)->list[torch.Tensor]:
@@ -51,8 +67,9 @@ def list_im_preprocessing(images:list[Image.Image],imsize=128)->list[torch.Tenso
     Returns:
             the preprocessed Images, dtype=list[torch.Tensor]"""
     result:list[torch.Tensor] = [None] * len(images) #type: ignore[list-item]
+    cropper = YOLO("yolo26n.pt")
     for i in tqdm(range(len(images)),desc="preprocessing for the dataset"):
-        result[i]=single_im_preprocessing(images[i],imsize)
+        result[i]=single_im_preprocessing(images[i],imsize,yolocropper=cropper)
     return result
 
 def image_hide_and_seek(image:torch.Tensor,patches_side:int,patches_length:int)->torch.Tensor:
@@ -211,9 +228,9 @@ def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_f
     data_storage.augment(augment_factor,val_destructive=False)
     loader= DataLoader(ImagesetFull(storage=data_storage), batch_size=batch_size,shuffle=shuffled)
     return loader
-#x,y =get_dataloaders()
-#a=next(iter(y))[0]
-#b=torch.squeeze(a)
-#c=b.permute(1,2,0)
-#plt.imshow(c)
-#plt.show()
+pairs = im_labels_pair_getter()
+for i in range(10):
+    fig, axs=plt.subplots(2,1)
+    axs[0].imshow(single_im_preprocessing(pairs[3000+i][0]).permute(1,2,0))
+    axs[1].imshow(pairs[3000+i][0])
+    plt.show()
