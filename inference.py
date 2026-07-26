@@ -104,7 +104,7 @@ class Model(nn.Module):
         self.model = model_creator.load_model()
 
     def forward(self, image: Image.Image) -> int:
-        y = preprocessing.single_im_preprocessing(image, 128)
+        y = preprocessing.single_im_preprocessing(image, 224)
         y = y.unsqueeze(0)
 
         #y = self.features(y)
