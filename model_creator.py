@@ -127,7 +127,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
     
     losses = []
 
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.CrossEntropyLoss(label_smoothing=0.1)
 
     if use_gpu:
         device = torch.device("cuda" if use_gpu else "cpu")
@@ -146,6 +146,7 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
     else:
         train_loader = preprocessing.get_one_dataloader(shuffled=False, image_side_length=image_size, batch_size=batch_size)
 
+    print(train_loader
 
     losses = []
     validation_accuracy = []
