@@ -1,7 +1,7 @@
 # image-classification-uni
 Group Project for University, classifying an image into one of 21 classes
 
-All that needs to be done to run the model is runnning inference.py
+All that needs to be done to run the model is running inference.py
 
 If manual setup of the model is necessary, it can be done in the following way:
 1. Preprocessing:
