@@ -37,23 +37,24 @@ def single_im_preprocessing(image:Image.Image,imsize=224,yolocropper=None)->torc
     gaus = GaussianBlur(5, 1)
     image = gaus.forward(image)
     imarray = np.array(image)
-    #if yolocropper== None:
-    #    yolocropper = YOLO("yolo26n.pt")
-    #results = yolocropper(imarray)
-    #if len(results[0].boxes) > 0:
-    #    cropped=imarray
-    #    maxsize=0
-    #    for idx, box in enumerate(results[0].boxes.xyxy):
-    #        x1, y1, x2, y2 = map(int, box[:4])
-    #        xlen=x2-x1
-    #        ylen=y2-y1
-    #        size=xlen*ylen
-    #        if size>maxsize and (results[0].boxes[idx].cls[0]==15 or results[0].boxes[idx].cls[0]==16):#15=cat 16=dog
-    #            maxsize=size
-    #            cropped = imarray[y1:y2, x1:x2]
-    #else:
-    cropper=albu.CenterCrop(imsize,imsize)
-    cropped=cropper(image=imarray)['image']
+    if yolocropper== None:
+        yolocropper = YOLO("yolo26n.pt")
+    results = yolocropper(imarray)
+    if len(results[0].boxes) > 0:
+        cropped=imarray
+        maxsize=0
+        for idx, box in enumerate(results[0].boxes.xyxy):
+            x1, y1, x2, y2 = map(int, box[:4])
+            xlen=x2-x1
+            ylen=y2-y1
+            size=xlen*ylen
+            if size>maxsize and (results[0].boxes[idx].cls[0]==15 or results[0].boxes[idx].cls[0]==16):#15=cat 16=dog
+                maxsize=size
+                cropped = imarray[y1:y2, x1:x2]
+    else:
+        cropped=imarray
+    #cropper=albu.CenterCrop(imsize,imsize)
+    #cropped=cropper(image=imarray)['image']
     imtensor=torch.tensor(cropped)
     imtensor = imtensor.permute(2,0,1) #[H,W,C]->[C,H,W]
     resize= transforms.Resize((imsize,imsize))
@@ -229,9 +230,9 @@ def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_f
     data_storage.augment(augment_factor,val_destructive=False)
     loader= DataLoader(ImagesetFull(storage=data_storage), batch_size=batch_size,shuffle=shuffled)
     return loader
-pairs = im_labels_pair_getter()
-for i in range(10):
-    fig, axs=plt.subplots(2,1)
-    axs[0].imshow(single_im_preprocessing(pairs[3000+i][0]).permute(1,2,0))
-    axs[1].imshow(pairs[3000+i][0])
-    plt.show()
+#pairs = im_labels_pair_getter()
+#for i in range(10):
+#    fig, axs=plt.subplots(2,1)
+#    axs[0].imshow(single_im_preprocessing(pairs[3000+i][0]).permute(1,2,0))
+#    axs[1].imshow(pairs[3000+i][0])
+#    plt.show()
