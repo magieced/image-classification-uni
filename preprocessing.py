@@ -48,7 +48,7 @@ def single_im_preprocessing(image:Image.Image,imsize=224,yolocropper=None)->torc
             xlen=x2-x1
             ylen=y2-y1
             size=xlen*ylen
-            if size>maxsize and (results[0].boxes[idx].cls[0]==15 or results[0].boxes[idx].cls[0]==16):
+            if size>maxsize and (results[0].boxes[idx].cls[0]==15 or results[0].boxes[idx].cls[0]==16):#15=cat 16=dog
                 maxsize=size
                 cropped = imarray[y1:y2, x1:x2]
     else:
