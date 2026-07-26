@@ -111,8 +111,10 @@ class Model(nn.Module):
         #x = self.classifier(y)
 
         x = self.model(y)
-
-        return x.argmax(dim=1).item()
+        x = x.argmax(dim=1).item()
+        if x == 20:
+            x = -1
+        return x
 
 
 if __name__ == "__main__":
