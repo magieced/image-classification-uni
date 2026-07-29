@@ -235,3 +235,26 @@ def load_model():
     model.load_state_dict(torch.load("bestyolob1pretrain", weights_only=True, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
     model.eval()
     return model
+
+def load_multiple_models():
+    model0 = models.efficientnet_b0(weights=None)
+    model0.classifier[1] = torch.nn.Linear(1280, 21)
+    model0.load_state_dict(torch.load("bestyolob0pretrain", weights_only=True, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
+    model0.eval()
+
+    model1 = models.efficientnet_b1(weights=None)
+    model1.classifier[1] = torch.nn.Linear(1280, 21)
+    model1.load_state_dict(torch.load("bestyolob1pretrain", weights_only=True, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
+    model1.eval()
+
+    model2 = models.efficientnet_b2(weights=None)
+    model2.classifier[1] = torch.nn.Linear(1408, 21)
+    model2.load_state_dict(torch.load("bestyolob2pretrain", weights_only=True, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
+    model2.eval()
+
+    model3 = models.efficientnet_b3(weights=None)
+    model3.classifier[1] = torch.nn.Linear(1536, 21)
+    model3.load_state_dict(torch.load("bestyolob3pretrain", weights_only=True, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
+    model3.eval()
+
+    return model0, model1, model2, model3
