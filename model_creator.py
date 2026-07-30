@@ -254,5 +254,3 @@ def load_multiple_models():
     model3.eval()
 
     return model0, model1, model2, model3
-
-train_model(create_validation_dataloader=False, augment=False)
