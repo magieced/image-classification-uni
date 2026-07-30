@@ -185,11 +185,21 @@ class Imageset(torch.utils.data.Dataset):
         return len(self.data)
 
 class ImagesetFull(torch.utils.data.Dataset):
-
-    def __init__(self,storage:PreprocessedPairStorage):
-
-            self.data = storage.data
-            self.labels = storage.labels
+    def __init__(self,storage:PreprocessedPairStorage, augment:bool=True):
+        self.data = storage.data
+        self.labels = storage.labels
+        if augment:
+            flip = transforms.RandomHorizontalFlip(1)
+            self.data = self.data + [flip(h) for h in tqdm(self.data, desc="flipping")]
+            self.labels = self.labels + self.labels
+            contrastbright= albu.PlasmaBrightnessContrast(p=1,roughness=2)
+            rot = albu.SafeRotate(limit=(-10,10),p=1)
+            self.data = self. data + [torch.permute(torch.tensor(contrastbright(image=b.permute(1,2,0).numpy())['image']),(2,0,1)) for b  in tqdm(self.data,desc="brightness/contrast augmentation")]
+            self.labels = self.labels + self.labels
+            self.data = self.data + [torch.permute(torch.tensor(rot(image=b.permute(1, 2, 0).numpy())['image']), (2, 0, 1)) for b in tqdm(self.data, desc="small(up to 10°) rotation augmentation")]
+            self.labels = self.labels + self.labels
+            self.data=shuffle(self.data,random_state=1)
+            self.labels=shuffle(self.labels,random_state=1)
 
     def __getitem__(self, item):
         return self.data[item],torch.tensor(self.labels[item])
@@ -228,8 +238,21 @@ def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_f
             a training(first 80%[possibly increased trough augment_factor]) and a validation(last 20%) dataloader of the training images"""
     data_storage = PreprocessedPairStorage(image_side_length)
     data_storage.augment(augment_factor,val_destructive=False)
-    loader= DataLoader(ImagesetFull(storage=data_storage), batch_size=batch_size,shuffle=shuffled)
+    loader = DataLoader(ImagesetFull(storage=data_storage), batch_size=batch_size,shuffle=shuffled)
     return loader
+
+# Added by Erik
+def get_validation_dataloader(image_side_length:int=224, batch_size=8):
+
+    data_pairs = im_labels_pair_getter(folder="images/", label_file="labels.csv")
+    data = list_im_preprocessing([(x[0]) for x in data_pairs], image_side_length)
+    labels = [int(x[1].replace('-1', '20')) for x in data_pairs]
+
+    data_storage = PreprocessedPairStorage(data=data, labels=labels, imsize=image_side_length)
+    loader = DataLoader(ImagesetFull(data_storage, augment=False), batch_size=batch_size)
+    return loader
+
+
 #pairs = im_labels_pair_getter()
 #for i in range(10):
 #    fig, axs=plt.subplots(2,1)

@@ -4,7 +4,6 @@ import torchvision.models as models
 import preprocessing
 from tqdm import tqdm
 import torch.nn as nn
-import torch.nn.functional as F
 
 class Net(nn.Module):
     def __init__(self):
@@ -45,17 +44,18 @@ class Net(nn.Module):
         x = self.classifier(x)
         return x
 
-def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_dataloader=True, augment=True, batch_size = 8, isRandom = False, pretrained = False):
+def train_model(use_gpu:bool=True, epochs:int=1, model_number:int=4, create_validation_dataloader:bool=True, augment:bool=True, batch_size:int=8, isRandom:bool=False, pretrained:bool=False):
     """Trains the specified model
+    Also saves the model with the best accuracy on the validation dataset
     Args:
-        use_gpu: whether the GPU should be used to train the model. Requires CUDA
+        use_gpu: toggles whether the GPU should be used to train the model. If CUDA is not available, defaults back to using the CPU
         epochs: the number of epochs used to train the model
         model_number: enum of the model architecture. 0 is efficientnet_b0, 1 is efficientnet_b1, 2 is simple CNN
-        create_validation_dataloader: toggles whether this outputs a part of the training set as a validation dataloader. This part doesn't get trained on
+        create_validation_dataloader: if True, splits off a part of the training set as a validation set. Otherwise, loads the provided validation set
         augment: toggles whether the imageset is augmented
         batch_size: batch size of the training dataloader
         isRandom: if False, sets a seed for torch and random
-        pretrained: if True, uses default weights for EfficientNet and switches to fine tuning
+        pretrained: if True, uses default weights for EfficientNet and switches to fine tuning. Doesn't affect the simple CNN
     Returns:
             the model, a validation set that wasn't trained on"""
 
@@ -123,15 +123,13 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
         optimizer,
         T_max = 100
     )
-    
-    losses = []
 
     criterion = torch.nn.CrossEntropyLoss(label_smoothing=0.1)
 
     use_gpu = use_gpu and torch.cuda.is_available()
+    device = torch.device("cuda" if use_gpu else "cpu")
+    model.to(device)
     if use_gpu:
-        device = torch.device("cuda" if use_gpu else "cpu")
-        model.to(device)
         criterion.cuda()
         if (not isRandom):
             torch.cuda.manual_seed(0)
@@ -142,9 +140,10 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
     model.train()
 
     if create_validation_dataloader:
-        train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=False, image_side_length=image_size, train_batch_size=batch_size, augment=augment)
+        train_loader, validation_loader = preprocessing.get_dataloaders(shuffled=isRandom, image_side_length=image_size, train_batch_size=batch_size, augment=augment)
     else:
-        train_loader = preprocessing.get_one_dataloader(shuffled=False, image_side_length=image_size, batch_size=batch_size)
+        train_loader = preprocessing.get_one_dataloader(shuffled=isRandom, image_side_length=image_size, batch_size=batch_size)
+        validation_loader = preprocessing.get_validation_dataloader(image_side_length=image_size, batch_size=batch_size)
 
     losses = []
     validation_accuracy = []
@@ -198,12 +197,9 @@ def train_model(use_gpu=False, epochs=1, model_number=4, create_validation_datal
                 break
 
     torch.save(model.state_dict(), "Model" + str(model_number) + "_Epochs" + str(epochs) + "_Pretrained" + str(pretrained) + "_weights")
-    if create_validation_dataloader:
-        return model, validation_loader
-    else:
-        return model
+    return model, validation_loader
 
-def evaluate_model(model, validation_loader):
+def evaluate_model(model, validation_loader)->float:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model.eval()
@@ -258,3 +254,5 @@ def load_multiple_models():
     model3.eval()
 
     return model0, model1, model2, model3
+
+train_model(create_validation_dataloader=False, augment=False)
