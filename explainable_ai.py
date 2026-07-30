@@ -1,14 +1,10 @@
 import torch
 from captum.attr import Occlusion
 import matplotlib.pyplot as plt
-import numpy as np
 import preprocessing 
 import model_creator
-import torchvision.models as models
 
-
-
-data = preprocessing.get_one_dataloader(shuffled=False, image_side_length=224, augment_factor=0,batch_size=1)
+data = preprocessing.get_one_dataloader(shuffled=False, image_side_length=224, batch_size=1)
 
 heatmaps = []
 true_labels = []

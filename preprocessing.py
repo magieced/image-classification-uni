@@ -1,19 +1,18 @@
 import random
 from os import error
 
-import matplotlib.pyplot as plt
 from PIL import Image
 import torch
 import albumentations as albu
 from torch.utils.data import DataLoader
 from torchvision.transforms import GaussianBlur
-from torchvision import datasets,transforms
+from torchvision import transforms
 import numpy as np
 from sklearn.utils import shuffle
 from tqdm import tqdm
 from ultralytics import YOLO
 
-def im_labels_pair_getter(folder="21ClassDataset/",label_file="labels_21ClassDataset.csv"):
+def im_labels_pair_getter(folder="21ClassDataset/", label_file="labels_21ClassDataset.csv"):
     labels=open(folder+label_file)
     labels.__next__()
     pairs=[]
@@ -26,7 +25,7 @@ def im_labels_pair_getter(folder="21ClassDataset/",label_file="labels_21ClassDat
         pairs += [[im,parts[1]]]
     return pairs
 
-def single_im_preprocessing(image:Image.Image,imsize=224,yolocropper=None)->torch.Tensor: # changed size to 224 ~Erik
+def single_im_preprocessing(image:Image.Image, imsize:int=224, yolocropper=None)->torch.Tensor: # changed size to 224 ~Erik
     """takes a single PIL image and scales it to imsize*imsize pixels(default: 224x224) and  blurs it with a gaussian kernel
     Args:
         image(PIL.Image.Image): the PIL Image to be preprocessed
@@ -61,8 +60,8 @@ def single_im_preprocessing(image:Image.Image,imsize=224,yolocropper=None)->torc
     imtensor = resize(imtensor)
     return imtensor/255
 
-def list_im_preprocessing(images:list[Image.Image],imsize=128)->list[torch.Tensor]:
-    """applies single_im_preprocessing over teh given list of images, scaling them ro imsize*imsize
+def list_im_preprocessing(images:list[Image.Image], imsize=128)->list[torch.Tensor]:
+    """applies single_im_preprocessing over the given list of images, scaling them to imsize*imsize
     Args:
         images(list[PIL.Image.Image]): the PIL Images to be preprocessed
         imsize(int): the sidelength to which the inputted images should be scaled
@@ -74,18 +73,17 @@ def list_im_preprocessing(images:list[Image.Image],imsize=128)->list[torch.Tenso
         result[i]=single_im_preprocessing(images[i],imsize,yolocropper=cropper)
     return result
 
-def image_hide_and_seek(image:torch.Tensor,patches_side:int,patches_length:int)->torch.Tensor:
+def image_hide_and_seek(image:torch.Tensor, patches_side:int, patches_length:int)->torch.Tensor:
     for i in range(patches_side):
         for j in range(patches_side):
             if random.choice([0,1]) == 0: #0 for not visible 1 for visible
-                hdim:int=i*patches_length
-                wdim:int=j*patches_length
+                hdim:int = i*patches_length
+                wdim:int = j*patches_length
                 image[:,hdim:hdim+patches_length,wdim:wdim+patches_length] = 0
     return image
+
 class PreprocessedPairStorage():
-
-
-    def __init__(self,imsize:int,data=None,labels=None,augmented:bool=False):
+    def __init__(self,imsize:int,data=None,labels=None):
         if data is None and labels is None:
             temppairs = im_labels_pair_getter()
             imspercent = len(temppairs) / 100
@@ -93,12 +91,10 @@ class PreprocessedPairStorage():
 
             labels = [int(x[1].replace('-1', '20')) for x in temppairs]
 
-
             self.data:list[torch.Tensor] = shuffle(data, random_state=0)
             self.labels:list[int] = shuffle(labels, random_state=0)
             self.split:int = round(imspercent * 80)
             self.augmented:bool=False
-
         elif not(data is None or labels is None):
             self.data = data
             self.labels = labels
@@ -108,7 +104,7 @@ class PreprocessedPairStorage():
             raise error("illegal init of PreprocessedPairStorage")
 
 
-    def augment(self,factor:int,val_destructive:bool=True,patches:int=16,copy:bool=False):
+    def augment(self, factor:int, val_destructive:bool=True, patches:int=16, copy:bool=False):
         """augments the data through the hide-and-seek algorithm
         (dividing the image into 16 patches and blacking out each one with a 50% chance)
         this is done factor times per image to expand the data factor times.
@@ -124,7 +120,7 @@ class PreprocessedPairStorage():
         if factor<1 or self.augmented:
             return self
         else:
-            patch_side:int= int(patches**0.5)
+            patch_side:int = int(patches**0.5)
             patch_side_length:int = int(self.data[1].size()[1]/patch_side)
             if not patch_side_length*patch_side == self.data[1].size()[1]:
                 raise error("you are trying to use a number of patches that can't be distributed equally over the size you are scaling the image to, please change the images side-length the number of patches or set the augment-factor to 0")
@@ -154,7 +150,6 @@ class PreprocessedPairStorage():
 
 
 class Imageset(torch.utils.data.Dataset):
-
     def __init__(self,train:bool,storage:PreprocessedPairStorage,augment:bool=True):
         self.train=train
         if train:
@@ -162,9 +157,9 @@ class Imageset(torch.utils.data.Dataset):
             self.labels = storage.labels[:storage.split]
             if augment:
                 flip = transforms.RandomHorizontalFlip(1)
-                self.data =self.data + [flip(h) for h in tqdm(self.data, desc="flipping")]
+                self.data = self.data + [flip(h) for h in tqdm(self.data, desc="flipping")]
                 self.labels = self.labels + self.labels
-                contrastbright= albu.PlasmaBrightnessContrast(p=1,roughness=2)
+                contrastbright = albu.PlasmaBrightnessContrast(p=1,roughness=2)
                 rot = albu.SafeRotate(limit=(-10,10),p=1)
                 self.data = self. data + [torch.permute(torch.tensor(contrastbright(image=b.permute(1,2,0).numpy())['image']),(2,0,1)) for b  in tqdm(self.data,desc="brightness/contrast augmentation")]
                 self.labels = self.labels + self. labels
@@ -176,6 +171,7 @@ class Imageset(torch.utils.data.Dataset):
         else:
             self.data = storage.data[storage.split:]
             self.labels = storage.labels[storage.split:]
+
     def __getitem__(self, item):
         if self.train:
             return self.data[item],torch.tensor(self.labels[item])
@@ -206,7 +202,6 @@ class ImagesetFull(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.data)
-
 
 def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0,train_batch_size=8,augment=True):
     """creates and return one dataloader for training and one dataloader for validation
