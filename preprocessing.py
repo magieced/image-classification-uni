@@ -83,7 +83,7 @@ def image_hide_and_seek(image:torch.Tensor, patches_side:int, patches_length:int
     return image
 
 class PreprocessedPairStorage():
-    def __init__(self,imsize:int,data=None,labels=None):
+    def __init__(self,imsize:int,data=None,labels=None, augmented:Bool=False):
         if data is None and labels is None:
             temppairs = im_labels_pair_getter()
             imspercent = len(temppairs) / 100
