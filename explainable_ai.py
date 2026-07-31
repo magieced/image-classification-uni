@@ -1,89 +1,63 @@
+import random
 import torch
 from captum.attr import Occlusion
 import matplotlib.pyplot as plt
 import numpy as np
 import preprocessing 
 import model_creator
-import torchvision.models as models
+
+model = model_creator.load_model()
+device = next(model.parameters()).device
+occlusion = Occlusion(model)
+
+def load_dataloader():
+    return preprocessing.get_one_dataloader(shuffled=False, image_side_length=224, augment_factor=0, batch_size=1)
+
+my_dataloader = load_dataloader() 
 
 
-
-data = preprocessing.get_one_dataloader(shuffled=False, image_side_length=224, augment_factor=0,batch_size=1)
-
-heatmaps = []
-true_labels = []
-predicted_labels = []
-
-#important if u dont have a GPU u need to set GPU = false at line 46 in model.py
-#to use it tip in 
-#python
-#import explainable_ai
-#explainable_ai.getocclusion(window=40, stride=16, picuture_index=0)
-# you need to close the window to get the next image
-#when finnished use exit() to close the console
+def getocclusion(window: int, stride: int, picture_index: int):
+    dataset = my_dataloader.dataset
+    input_tensor, label_tensor = dataset[picture_index]
+    input_tensor = input_tensor.unsqueeze(0)
 
 
-#man ruft getocclusion auf und übergibt die parameter die man haben möchte
-#window = wie groß das patch sein soll hier immer Quadratisch
-#stride = schritteweite
+    true_class = int(label_tensor)
+    input_tensor = input_tensor.to(device)
 
-
-def getocclusion( window, stride, picuture_index):
-    global heatmaps, true_labels, predicted_labels
-    heatmaps = []
-    true_labels = []
-    predicted_labels = []
-   
-    model = model_creator.load_model()
-    occlusion = Occlusion(model)
-
-    sliding_window_shapes1 = (3, window, window)
-    strides1 = (3, stride, stride)
-
-    data_iterator = iter(data)
-
-    for _ in range(picuture_index):
-        try: 
-            next(data_iterator)
-        except StopIteration:
-            print(f"Fehler: Index {picuture_index} ist zu groß!")
-            return
-
-    try: 
-        input_tensor, i = next(data_iterator)
-    except StopIteration:
-        print(f"Fehler: Index {picuture_index} außerhalb der Reichweite!")
-        return
-        
-    true_class = i.item()
-    
     with torch.no_grad():
         out = model(input_tensor)
         predicted_class = torch.argmax(out, dim=1).item()
 
+    sliding_window_shapes = (3, window, window)
+    strides = (3, stride, stride)
+
     attribute = occlusion.attribute(
         input_tensor,
         target=predicted_class, 
-        sliding_window_shapes=sliding_window_shapes1, 
-        strides=strides1 
+        sliding_window_shapes=sliding_window_shapes, 
+        strides=strides 
     )
 
-    heatmap = attribute.squeeze(0).detach().numpy().mean(axis=0)
+    heatmap = attribute.squeeze(0).cpu().detach().numpy().mean(axis=0)
 
-    heatmaps.append(heatmap)
-    true_labels.append(true_class)
-    predicted_labels.append(predicted_class)
+    original_img = input_tensor.squeeze(0).permute(1, 2, 0).cpu().numpy()
+    original_img = (original_img - original_img.min()) / (original_img.max() - original_img.min())
 
-    picture = heatmap
-    plt.figure(figsize=(5, 5))
-    plt.imshow(picture)
-    plt.colorbar()
-    plt.title(f"Heatmap number: {picuture_index}, true class: {true_class}, predicted class: {predicted_class} ")
+    plt.figure(figsize=(10, 4))
+    
+    plt.subplot(1, 2, 1)
+    plt.imshow(original_img)
+    plt.title(f"Image Index: {picture_index} (True class: {true_class}) (Predicted class: {predicted_class})")
+    plt.axis('off')
+    
+    plt.subplot(1, 2, 2)
+    image = plt.imshow(heatmap)
+    plt.title(f"Heatmap ")
+    plt.axis('off')
+    plt.colorbar(image)
+
+    plt.tight_layout()
     plt.show()
 
-    return 
-
-
-
-
-
+    return heatmap, true_class, predicted_class
