@@ -1,3 +1,10 @@
 b0 accuracy: 0.04015151515151515
 b1 accuracy: 0.05303030303030303
 b2 accuracy: 0.04015151515151515
+Yolo Simple CNN 0.3776223776223776      (hier mit allen 3 augments)(sollte equivalrt zu bestcnn sein)
+Yolo Simple CNN 0.2727272727272727      (hier mit nur flipping)
+Yolo EfficientNet_B1 0.24475524475524477 (sollte ~0.2937 sein)
+Yolo EfficientNet_B0 with default/pretrained weights 0.7762237762237763 (sollte eig ~0.7902 sein, validiert scheinbar auf den weigths der letzten epoche statt auf den besten(also muss nochmal neu validiert werden/oder man nimmt meine hier manuell hinzugefügten werte(=werte der besten epoche laut commandline output)))
+Yolo EfficientNet_B1 with default/pretrained weights 0.8321678321678322(sollte ~0.8391 sein)
+Yolo EfficientNet_B2 with default/pretrained weights 0.8111888111888111(stimmt)
+Yolo EfficientNet_B3 with default/pretrained weights 0.7552447552447552(sollte ~0.7622 sein)

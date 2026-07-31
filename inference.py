@@ -23,6 +23,7 @@ import random
 from pathlib import Path
 import torchvision.models as models
 import preprocessing
+import model_creator
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -66,14 +67,60 @@ class Model(nn.Module):
     The placeholder below is a uniform random guesser so the script runs.
     """
     def __init__(self):
-        self.model = models.efficientnet_b0(weights = "efficientnetb0_weights_V0")
+        super().__init__()
+
+        """
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 32, kernel_size=3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2),                # (32, 64, 64)
+        
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2),                # (64, 32, 32)
+        
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2),                # (128, 16, 16)
+        
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2),                # (256, 8, 8)
+        
+            nn.AdaptiveAvgPool2d((1, 1))    # (256, 1, 1)
+        )
+        
+        self.classifier = nn.Sequential(
+            nn.Flatten(),
+            nn.Dropout(0.5),
+            nn.Linear(256, 21)              # Hardcoded as we always have 21 classes
+        )
+
+        self.load_state_dict(torch.load("bestcnn", weights_only=True, map_location=torch.device('cpu')))"""
+
+        #self.model = model_creator.load_model()
+        self.model0, self.model1, self.model2, self.model3 = model_creator.load_multiple_models()
 
     def forward(self, image: Image.Image) -> int:
-        image = preprocessing.single_im_preprocessing(Image)
-        label = self.model(image)
-        if label == 20:
-            label = -1
-        return label
+        y = preprocessing.single_im_preprocessing(image, 224)
+        y = y.unsqueeze(0)
+
+        """
+        y = self.features(y)
+        x = self.classifier(y)
+        """
+
+        x = self.model0(y)
+        x += self.model1(y)
+        
+        x = x.argmax(dim=1).item()
+        if x == 20:
+            x = -1
+        return x
 
 
 if __name__ == "__main__":
@@ -89,6 +136,7 @@ if __name__ == "__main__":
         for filename, label in tqdm(zip(df["filename"], df["label"]), total=len(df)):
             image = Image.open(args.image_folder / filename).convert("RGB")
             pred = model(image)
+
             y_true.append(int(label))
             y_pred.append(int(pred))
 

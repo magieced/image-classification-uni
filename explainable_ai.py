@@ -2,7 +2,6 @@ import random
 import torch
 from captum.attr import Occlusion
 import matplotlib.pyplot as plt
-import numpy as np
 import preprocessing 
 import model_creator
 
