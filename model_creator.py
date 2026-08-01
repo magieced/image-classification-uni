@@ -2,6 +2,7 @@ import random
 import torch
 import torchvision.models as models
 import preprocessing
+import numpy as np
 from tqdm import tqdm
 import torch.nn as nn
 
@@ -148,6 +149,8 @@ def train_model(use_gpu:bool=True, epochs:int=1, model_number:int=4, create_vali
     losses = []
     validation_accuracy = []
     max_epoch_accuracy = 0
+    weight_path = "Model" + str(model_number) + "_Epochs" + str(epochs) + "_Pretraind" + str(pretrained) + "_best_temp_weights"
+
     for epoch in tqdm(range(epochs), desc='Epoch'):
         epoch_loss = 0.0
 
@@ -179,16 +182,17 @@ def train_model(use_gpu:bool=True, epochs:int=1, model_number:int=4, create_vali
 
         epoch_loss /= len(train_loader)
         losses.append(epoch_loss)
-        print(epoch, epoch_loss / len(train_loader))
+        #print(epoch, epoch_loss / len(train_loader))
         epoch_accuracy = evaluate_model(model, validation_loader)
         if epoch_accuracy > max_epoch_accuracy:
-            torch.save(model.state_dict(), "Model" + str(model_number) + "_Epochs" + str(epochs) + "_Pretraind" + str(pretrained) + "_best_temp_weights")
+            torch.save(model.state_dict(), weight_path)
             max_epoch_accuracy = epoch_accuracy
         
         validation_accuracy.append(evaluate_model(model, validation_loader))
 
         # Stop if relative improvement is too small
         if len(losses) > 1 and (epoch > 5 or (not pretrained)):
+            # We use -1 and -2 to catch any possible small improvements after the model has already started overfitting
             relative_change = abs(validation_accuracy[-1]) - abs(validation_accuracy[-2])
 
             if relative_change < 0:
@@ -196,7 +200,8 @@ def train_model(use_gpu:bool=True, epochs:int=1, model_number:int=4, create_vali
                 print("Stopping early at epoch " + str(epoch))
                 break
 
-    torch.save(model.state_dict(), "Model" + str(model_number) + "_Epochs" + str(epochs) + "_Pretrained" + str(pretrained) + "_weights")
+    model.load_state_dict(torch.load(weight_path, weights_only=True, map_location=device))
+                          
     return model, validation_loader
 
 def evaluate_model(model, validation_loader)->float:
@@ -208,9 +213,7 @@ def evaluate_model(model, validation_loader)->float:
     total = 0
 
     with torch.no_grad():
-
         for images, labels in validation_loader:
-
             images = images.to(device)
             labels = labels.to(device)
 
@@ -233,24 +236,81 @@ def load_model():
     return model
 
 def load_multiple_models():
-    model0 = models.efficientnet_b0(weights=None)
-    model0.classifier[1] = torch.nn.Linear(1280, 21)
-    model0.load_state_dict(torch.load("bestyolob0pretrain", weights_only=True, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
-    model0.eval()
+    """Outputs a list of pretrained models as a list, namely B0 through B3, with two weights per model.
+    Returns: A list of models set into eval
+    """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model1 = models.efficientnet_b1(weights=None)
-    model1.classifier[1] = torch.nn.Linear(1280, 21)
-    model1.load_state_dict(torch.load("bestyolob1pretrain", weights_only=True, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
-    model1.eval()
+    model_list = []
 
-    model2 = models.efficientnet_b2(weights=None)
-    model2.classifier[1] = torch.nn.Linear(1408, 21)
-    model2.load_state_dict(torch.load("bestyolob2pretrain", weights_only=True, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
-    model2.eval()
+    model_list.append(models.efficientnet_b0(weights=None))
+    model_list[0].classifier[1] = torch.nn.Linear(1280, 21)
+    model_list[0].load_state_dict(torch.load("Model0_Epochs20_PretraindTrue_best_temp_weights", weights_only=True, map_location=device))
 
-    model3 = models.efficientnet_b3(weights=None)
-    model3.classifier[1] = torch.nn.Linear(1536, 21)
-    model3.load_state_dict(torch.load("bestyolob3pretrain", weights_only=True, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
-    model3.eval()
+    model_list.append(models.efficientnet_b0(weights=None))
+    model_list[1].classifier[1] = torch.nn.Linear(1280, 21)
+    model_list[1].load_state_dict(torch.load("bestyolob0pretrain", weights_only=True, map_location=device))
 
-    return model0, model1, model2, model3
+    model_list.append(models.efficientnet_b1(weights=None))
+    model_list[2].classifier[1] = torch.nn.Linear(1280, 21)
+    model_list[2].load_state_dict(torch.load("Model1_Epochs20_PretraindTrue_best_temp_weights", weights_only=True, map_location=device))
+
+    model_list.append(models.efficientnet_b1(weights=None))
+    model_list[3].classifier[1] = torch.nn.Linear(1280, 21)
+    model_list[3].load_state_dict(torch.load("bestyolob1pretrain", weights_only=True, map_location=device))
+    
+    model_list.append(models.efficientnet_b2(weights=None))
+    model_list[4].classifier[1] = torch.nn.Linear(1408, 21)
+    model_list[4].load_state_dict(torch.load("Model2_Epochs20_PretraindTrue_best_temp_weights", map_location=device))
+
+    model_list.append(models.efficientnet_b2(weights=None))
+    model_list[5].classifier[1] = torch.nn.Linear(1408, 21)
+    model_list[5].load_state_dict(torch.load("bestyolob2pretrain", map_location=device))
+
+    model_list.append(models.efficientnet_b3(weights=None))
+    model_list[6].classifier[1] = torch.nn.Linear(1536, 21)
+    model_list[6].load_state_dict(torch.load("Model3_Epochs20_PretraindTrue_best_temp_weights", weights_only=True, map_location=device))
+
+    model_list.append(models.efficientnet_b3(weights=None))
+    model_list[7].classifier[1] = torch.nn.Linear(1536, 21)
+    model_list[7].load_state_dict(torch.load("bestyolob3pretrain", weights_only=True, map_location=device))
+
+    for model in model_list:
+        model.eval()
+
+    return model_list
+
+def create_ensemble_weights(model_list):
+    """Used to find optimal combination weights for an ensemble of the input list.
+    Finds weights by analysing the accuracy of each output label for each model, then normalising them among the models.
+    Args: A list of models in eval mode
+    Returns: A list of weights of length len(model_list)x21 
+    """
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    weights = np.zeros((len(model_list), 21), dtype=float)
+    accuracies = np.zeros((len(model_list), 21))
+    counts = np.zeros((len(model_list), 21))
+    validation_dataset = preprocessing.get_validation_dataloader().dataset
+    
+    for i in range(len(model_list)):
+        for pair in validation_dataset:
+            model_guess = model_list[i](pair[0].unsqueeze(0))
+            model_guess = model_guess.argmax(dim=1).item()
+            accuracies[i][model_guess] += int(pair[1] == model_guess)
+            counts[i][model_guess] += 1
+
+        for j in range(21):
+            weights[i][j] = accuracies[i][j]/counts[i][j]
+
+    weights = weights.transpose()
+
+    for i in range(21):
+        print(sum(weights[i]))
+        weights[i] /= sum(weights[i])
+
+    weights = weights.transpose()
+
+    np.save("Ensemble weights", weights)
+
+    return weights

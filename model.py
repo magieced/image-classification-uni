@@ -4,7 +4,7 @@ def train_test_models():
     """Trains multiple models to remove the need for manual queuing
     """
     file = open("accuracy_list.txt", 'a')
-    model, validation = model_creator.train_model(use_gpu=True, epochs=20, model_number=4, create_validation_dataloader=False, augment=True, batch_size=32, pretrained=True)
+    model, validation = model_creator.train_model(use_gpu=True, epochs=20, model_number=4, create_validation_dataloader=False, augment=True, batch_size=16, pretrained=True)
     accuracy = model_creator.evaluate_model(model, validation)
     file.write("Yolo Simple CNN " + str(accuracy) + "\n")
     del(model)

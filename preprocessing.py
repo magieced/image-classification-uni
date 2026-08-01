@@ -220,7 +220,7 @@ def get_dataloaders(shuffled:bool=False, image_side_length:int=224, augment_fact
     return train_set,valid_set
 
 def get_augmented_dataloader_from_augmented_storage(shuffle:bool, augmented_storage:PreprocessedPairStorage,batch_size=8):
-    return DataLoader(ImagesetFull(storage=augmented_storage), batch_size=8, shuffle=shuffle)
+    return DataLoader(ImagesetFull(storage=augmented_storage), batch_size=batch_size, shuffle=shuffle)
 
 def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_factor:int=0,batch_size=8):
     """creates and return one dataloader for training and one dataloader for validation
@@ -237,7 +237,7 @@ def get_one_dataloader(shuffled:bool=False, image_side_length:int=224, augment_f
     return loader
 
 # Added by Erik
-def get_validation_dataloader(image_side_length:int=224, batch_size=8):
+def get_validation_dataloader(image_side_length:int=224, batch_size=1):
 
     data_pairs = im_labels_pair_getter(folder="images/", label_file="labels.csv")
     data = list_im_preprocessing([(x[0]) for x in data_pairs], image_side_length)
@@ -245,6 +245,7 @@ def get_validation_dataloader(image_side_length:int=224, batch_size=8):
 
     data_storage = PreprocessedPairStorage(data=data, labels=labels, imsize=image_side_length)
     loader = DataLoader(ImagesetFull(data_storage, augment=False), batch_size=batch_size)
+    
     return loader
 
 

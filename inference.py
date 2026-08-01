@@ -26,6 +26,7 @@ import preprocessing
 import model_creator
 import pandas as pd
 import torch
+import numpy as np
 import torch.nn as nn
 from PIL import Image
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
@@ -103,7 +104,8 @@ class Model(nn.Module):
         self.load_state_dict(torch.load("bestcnn", weights_only=True, map_location=torch.device('cpu')))"""
 
         #self.model = model_creator.load_model()
-        self.model0, self.model1, self.model2, self.model3 = model_creator.load_multiple_models()
+        self.model_list = model_creator.load_multiple_models()
+        self.weights = np.load("Ensemble weights.npy")
 
     def forward(self, image: Image.Image) -> int:
         y = preprocessing.single_im_preprocessing(image, 224)
@@ -114,8 +116,12 @@ class Model(nn.Module):
         x = self.classifier(y)
         """
 
-        x = self.model0(y)
-        x += self.model1(y)
+        x = 0
+        for i in range(len(self.model_list)):
+            x += self.model_list[i](y) * self.weights[i]
+
+        #x = self.model_list[0](y)
+        #x += self.model_list[2](y)
         
         x = x.argmax(dim=1).item()
         if x == 20:
