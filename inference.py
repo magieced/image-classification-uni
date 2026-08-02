@@ -105,7 +105,8 @@ class Model(nn.Module):
 
         #self.model = model_creator.load_model()
         self.model_list = model_creator.load_multiple_models()
-        self.weights = np.load("Ensemble weights.npy")
+        self.single_model = model_creator.load_model()
+        self.weights = np.load("Ensemble_weights.npy")
 
     def forward(self, image: Image.Image) -> int:
         y = preprocessing.single_im_preprocessing(image, 224)
@@ -115,6 +116,8 @@ class Model(nn.Module):
         y = self.features(y)
         x = self.classifier(y)
         """
+
+        #x = self.single_model(y)
 
         x = 0
         for i in range(len(self.model_list)):

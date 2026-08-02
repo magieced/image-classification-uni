@@ -231,7 +231,7 @@ def evaluate_model(model, validation_loader)->float:
 def load_model():
     model = models.efficientnet_b1(weights=None)
     model.classifier[1] = torch.nn.Linear(1280, 21)
-    model.load_state_dict(torch.load("bestyolob1pretrain", weights_only=True, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
+    model.load_state_dict(torch.load("Model1_Epochs20_PretraindFalse_best_temp_weights", weights_only=True, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
     model.eval()
     return model
 
@@ -280,10 +280,12 @@ def load_multiple_models():
 
     return model_list
 
-def create_ensemble_weights(model_list):
+def create_ensemble_weights(model_list, power=1):
     """Used to find optimal combination weights for an ensemble of the input list.
     Finds weights by analysing the accuracy of each output label for each model, then normalising them among the models.
-    Args: A list of models in eval mode
+    Args:
+        A list of models in eval mode
+        Takes the accuracies to the input power prior to normalisation
     Returns: A list of weights of length len(model_list)x21 
     """
 
@@ -306,11 +308,11 @@ def create_ensemble_weights(model_list):
     weights = weights.transpose()
 
     for i in range(21):
-        print(sum(weights[i]))
+        weights[i] = [x**power for x in weights[i]]
         weights[i] /= sum(weights[i])
 
     weights = weights.transpose()
 
-    np.save("Ensemble weights", weights)
+    np.save("Ensemble_weights", weights)
 
     return weights
